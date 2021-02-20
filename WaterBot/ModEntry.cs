@@ -1,15 +1,18 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
-using StardewModdingAPI.Utilities;
 using StardewValley;
+using StardewValley.Tools;
+using WaterBot.Framework.Tools;
 
-namespace YourProjectName
+namespace WaterBot
 {
     /// <summary>The mod entry point.</summary>
     public class WaterBot : Mod
     {
+        public bool waterBotOn = false;
+
         /*********
         ** Public methods
         *********/
@@ -33,13 +36,21 @@ namespace YourProjectName
             if (!Context.IsWorldReady)
                 return;
 
-            Game1.addHUDMessage(new HUDMessage("Starting Watering Now", 1));
+            if (this.waterBotOn)
+            {
+                Game1.addHUDMessage(new HUDMessage("Tired of Watering", 1));
+                this.waterBotOn = false;
+            }
 
-            this.Monitor.Log($"{Game1.player.getTileX() * Game1.tileSize}");
-            this.Monitor.Log($"{Game1.player.getTileY() * Game1.tileSize}");
+            if (e.Button == SButton.MouseLeft && Game1.currentLocation is Farm && Game1.player.CurrentItem is WateringCan)
+            {
+                Vector2 toolLocation = Game1.player.GetToolLocation(false);
+                List<Vector2> source = ((UnprotectedWateringCan)Game1.player.CurrentItem).useTilesAffected(new Vector2((float)(toolLocation.X / Game1.tileSize), (float)(toolLocation.Y / Game1.tileSize)), 1, Game1.player);
 
-            // print button presses to the console window
-            this.Monitor.Log($"{Game1.player.Name} pressed {e.Button}.", LogLevel.Debug);
+                Game1.addHUDMessage(new HUDMessage("Watering Plants", 1));
+                this.Monitor.Log($"{Game1.player.GetToolLocation(true)}", LogLevel.Debug);
+                this.waterBotOn = true;
+            }
         }
     }
 }

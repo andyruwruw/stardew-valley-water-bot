@@ -33,6 +33,11 @@ namespace YourProjectName
             if (!Context.IsWorldReady)
                 return;
 
+            Game1.addHUDMessage(new HUDMessage("Starting Watering Now", 1));
+
+            this.Monitor.Log($"{Game1.player.getTileX() * Game1.tileSize}");
+            this.Monitor.Log($"{Game1.player.getTileY() * Game1.tileSize}");
+
             // print button presses to the console window
             this.Monitor.Log($"{Game1.player.Name} pressed {e.Button}.", LogLevel.Debug);
         }

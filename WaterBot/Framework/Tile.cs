@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace WaterBot.Framework
 {
+    /// <summary>
+    /// Tile on the map, containing path finding and waterable related data.
+    /// </summary>
     class Tile
     {
         public bool block;
@@ -18,49 +22,7 @@ namespace WaterBot.Framework
 
         public int y;
 
-        public int f;
-
-        public int g;
-
-        public int h;
-
         public bool visited;
-
-        public Tile(int x, int y)
-        {
-            this.x = x;
-            this.y = y;
-
-            this.block = false;
-            this.water = false;
-            this.waterable = false;
-
-            this.visited = false;
-        }
-
-        public Tile(int x, int y, bool block)
-        {
-            this.x = x;
-            this.y = y;
-
-            this.block = block;
-            this.water = false;
-            this.waterable = false;
-
-            this.visited = false;
-        }
-
-        public Tile(int x, int y, bool block, bool water)
-        {
-            this.x = x;
-            this.y = y;
-
-            this.block = block;
-            this.water = water;
-            this.waterable = false;
-
-            this.visited = false;
-        }
 
         public Tile(int x, int y, bool block, bool water, bool waterable)
         {
@@ -74,9 +36,50 @@ namespace WaterBot.Framework
             this.visited = false;
         }
 
+        /// <summary>
+        /// Finds the Manhattan distance to another point.
+        /// </summary>
+        /// 
+        /// <param name="other"></param>
         public int distanceTo(Tile other)
         {
             return Math.Abs(other.x - this.x) + Math.Abs(other.y - this.y);
+        }
+
+        /// <summary>
+        /// Finds the Manhattan distance to another point.
+        /// </summary>
+        /// 
+        /// <param name="other"></param>
+        public int distanceTo(Point other)
+        {
+            return Math.Abs(other.X - this.x) + Math.Abs(other.Y - this.y);
+        }
+
+        /// <summary>
+        /// Resets grouping data.
+        /// </summary>
+        public void reset()
+        {
+            this.visited = false;
+        }
+
+        /// <summary>
+        /// Returns Point instance of Tile
+        /// </summary>
+        public Point getPoint()
+        {
+            return new Point(this.x, this.y);
+        }
+
+        public bool Equals(Tile other)
+        {
+            return other.x == this.x && other.y == this.y;
+        }
+
+        public bool Equals(Point other)
+        {
+            return other.X == this.x && other.Y == this.y;
         }
 
         public override string ToString()
@@ -98,11 +101,6 @@ namespace WaterBot.Framework
                 return "#";
             }
             return " ";
-        }
-
-        public void reset()
-        {
-            this.visited = false;
         }
     }
 }

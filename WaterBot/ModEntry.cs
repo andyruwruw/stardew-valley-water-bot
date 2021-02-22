@@ -11,33 +11,29 @@ using WaterBot.Framework;
 
 namespace WaterBot
 {
-    /// <summary>The mod entry point.</summary>
+    /// <summary>
+    /// The mod entry point.
+    /// </summary>
     public class WaterBot : Mod
     {
-        public bool active = false;
+        private WaterBotControler bot;
 
-        Map map;
-
-        Player player;
-
-        /*********
-        ** Public methods
-        *********/
-        /// <summary>The mod entry point, called after the mod is first loaded.</summary>
+        /// <summary>
+        /// The mod entry point, called after the mod is first loaded.
+        /// </summary>
+        /// 
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
         public override void Entry(IModHelper helper)
         {
-            this.map = new Map();
-
-            this.player = new Player();
+            this.bot = new WaterBotControler();
 
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
         }
 
-        /*********
-        ** Private methods
-        *********/
-        /// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>
+        /// <summary>
+        /// Raised after the player presses a button on the keyboard, controller, or mouse.
+        /// </summary>
+        /// 
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
@@ -46,20 +42,21 @@ namespace WaterBot
             if (!Context.IsWorldReady)
                 return;
 
-            if (this.active)
+            if (this.bot.active)
             {
-                this.stopBot();
+                this.bot.stop();
             } else if (e.Button == SButton.MouseLeft)
             {
                 if (this.isWateringHoedDirt())
                 {
-                    this.console("Starting");
-                    this.startBot();
+                    this.bot.start(this.console);
                 }
             }
         }
 
-        /// <summary>Determines if the event was watering a tile of hoed dirt</summary>
+        /// <summary>
+        /// Determines if the event was watering a tile of hoed dirt
+        /// </summary>
         private bool isWateringHoedDirt()
         {
             // Is the player using a Watering Can on their Farm?
@@ -79,7 +76,7 @@ namespace WaterBot
                     Vector2 rounded = new Vector2((float)Math.Round(tileLocation.X), (float)Math.Round(tileLocation.Y));
 
                     // If they just watered Hoe Dirt, return true
-                    if (Game1.currentLocation.terrainFeatures.ContainsKey(rounded) && Game1.currentLocation.terrainFeatures[rounded] is HoeDirt)
+                    if (Game1.currentLocation.terrainFeatures.ContainsKey(rounded) && Game1.currentLocation.terrainFeatures[rounded] is HoeDirt && (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop != null)
                     {
                         return true;
                     }
@@ -88,37 +85,11 @@ namespace WaterBot
             return false;
         }
 
-        /// <summary>Start water bot</summary>
-        private void startBot()
-        {
-            this.displayMessage("Time to start watering!", 2);
-
-            this.map.loadMap(Game1.currentLocation);
-            this.map.displayMap(this.console);
-
-            this.map.findGroupings(this.console);
-
-            this.active = true;
-            this.console("DONE");
-        }
-
-        /// <summary>Stop water bot</summary>
-        private void stopBot()
-        {
-            this.displayMessage("Tired of watering", 3);
-            this.active = false;
-        }
-
-        /// <summary>Displays banner message.</summary>
-        /// <param name="message">Banner text.</param>
-        /// <param name="type">Banner type.</param>
-        public void displayMessage(string message, int type)
-        {
-            Game1.addHUDMessage(new HUDMessage(message, type));
-        }
-
-        /// <summary>Debug messages</summary>
-        /// /// <param name="message">Message text.</param>
+        /// <summary>
+        /// Debug messages
+        /// </summary>
+        /// 
+        /// <param name="message">Message text.</param>
         public void console(string message)
         {
             this.Monitor.Log(message, LogLevel.Debug);

@@ -48,9 +48,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Framework\Group.cs" />
     <Compile Include="Framework\Map.cs" />
     <Compile Include="Framework\Player.cs" />
+    <Compile Include="Framework\PlayerControler.cs" />
     <Compile Include="Framework\Tile.cs" />
+    <Compile Include="Framework\WaterBotControler.cs" />
     <Compile Include="ModEntry.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

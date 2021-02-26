@@ -22,6 +22,11 @@ namespace WaterBot.Framework
             this.list = new List<Tile>();
         }
 
+        public List<Tile> getList()
+        {
+            return this.list;
+        }
+
         /// <summary>
         /// Add a tile to the group
         /// </summary>

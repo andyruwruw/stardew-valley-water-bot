@@ -45,7 +45,7 @@ namespace WaterBot
             if (this.bot.active)
             {
                 this.bot.stop();
-            } else if (e.Button == SButton.MouseLeft)
+            } else if (e.Button == SButton.MouseRight)
             {
                 if (this.isWateringHoedDirt())
                 {

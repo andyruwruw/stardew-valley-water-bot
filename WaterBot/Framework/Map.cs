@@ -24,7 +24,24 @@ namespace WaterBot.Framework
 
         public int height;
 
-        public Map() { }
+        private Tuple<int, int, Func<int, int, bool>>[] directions;
+
+        private Tuple<int, int, Func<int, int, bool>>[] diagonals;
+
+        public Map() {
+            this.directions = new Tuple<int, int, Func<int, int, bool>>[] {
+                new Tuple<int, int, Func<int, int, bool>>(1, 0, (int y, int x) => y < this.height),
+                new Tuple<int, int, Func<int, int, bool>>(-1, 0, (int y, int x) => y >= 0),
+                new Tuple<int, int, Func<int, int, bool>>(0, 1, (int y, int x) => x < this.width),
+                new Tuple<int, int, Func<int, int, bool>>(0, -1, (int y, int x) => x >= 0),
+            };
+            this.diagonals = new Tuple<int, int, Func<int, int, bool>>[] {
+                new Tuple<int, int, Func<int, int, bool>>(1, 1, (int y, int x) => x < this.width && y < this.height),
+                new Tuple<int, int, Func<int, int, bool>>(-1, -1, (int y, int x) => x >= 0 && y >= 0),
+                new Tuple<int, int, Func<int, int, bool>>(1, -1, (int y, int x) => x >= 0 && y < this.height),
+                new Tuple<int, int, Func<int, int, bool>>(-1, 1, (int y, int x) => x < this.width && y >= 0),
+            };
+        }
 
         /// <summary>
         /// Converts coords to tile.
@@ -264,17 +281,6 @@ namespace WaterBot.Framework
                         this.groupings.Add(group);
                     }
                 }
-                if (tile.y <= this.height - 1 && tile.x <= this.width - 1 && !grouped)
-                {
-                    Tile neighbor = this.map[tile.y + 1][tile.x + 1];
-                    if (neighbor.waterable)
-                    {
-                        grouped = true;
-                        Group group = new Group(index);
-                        this.populateGroup(group, tile);
-                        this.groupings.Add(group);
-                    }
-                }
                 if (!grouped)
                 {
                     Group solo = new Group(index);
@@ -314,41 +320,9 @@ namespace WaterBot.Framework
                     this.populateGroup(group, neighbor);
                 }
             }
-            if (!leftBorder && !topBorder)
-            {
-                Tile neighbor = this.map[tile.y - 1][tile.x - 1];
-                if (neighbor.waterable && neighbor.visited == false)
-                {
-                    this.populateGroup(group, neighbor);
-                }
-            }
-            if (!leftBorder && !bottomBorder)
-            {
-                Tile neighbor = this.map[tile.y + 1][tile.x - 1];
-                if (neighbor.waterable && neighbor.visited == false)
-                {
-                    this.populateGroup(group, neighbor);
-                }
-            }
             if (!rightBorder)
             {
                 Tile neighbor = this.map[tile.y][tile.x + 1];
-                if (neighbor.waterable && neighbor.visited == false)
-                {
-                    this.populateGroup(group, neighbor);
-                }
-            }
-            if (!rightBorder && !topBorder)
-            {
-                Tile neighbor = this.map[tile.y - 1][tile.x + 1];
-                if (neighbor.waterable && neighbor.visited == false)
-                {
-                    this.populateGroup(group, neighbor);
-                }
-            }
-            if (!rightBorder && !bottomBorder)
-            {
-                Tile neighbor = this.map[tile.y + 1][tile.x + 1];
                 if (neighbor.waterable && neighbor.visited == false)
                 {
                     this.populateGroup(group, neighbor);
@@ -399,7 +373,7 @@ namespace WaterBot.Framework
                         }
                         else if (j == 0 || i == 0)
                         {
-                            Point start = Player.getPosition();
+                            Point start = new Point(Game1.player.getTileX(), Game1.player.getTileY());
                             Point end = this.groupings[i == 0 ? j - 1 : i - 1].Centroid();
 
                             Tuple<List<Tile>, int> path = this.walkablePathBetweenPoints(console, start, end);
@@ -593,24 +567,16 @@ namespace WaterBot.Framework
             return new Tuple<List<Tile>, int>(null, int.MaxValue);
         }
 
+        /// <summary>
+        /// Runs TSP Greedy to find best path through all groups
+        /// </summary>
+        /// 
+        /// <param name="console">Function for printing to debug console.</param>
         public List<Group> findGroupPath(console console)
         {
             List<Group> path = new List<Group>();
 
             int[,] costMatrix = this.generateCostMatrix(console);
-
-            int rowLength = costMatrix.GetLength(0);
-            int colLength = costMatrix.GetLength(1);
-
-            for (int row = 0; row < rowLength; row++)
-            {
-                string matrix = "";
-                for (int col = 0; col < colLength; col++)
-                {
-                    matrix += $" {costMatrix[row, col]} ";
-                }
-                console(matrix);
-            }
 
             int sum = 0;
             int counter = 0;
@@ -667,20 +633,224 @@ namespace WaterBot.Framework
             }
             sum += min;
 
-            console($"Ran: {ranTimes} times");
-
             foreach (int index in visitedRouteList)
             {
-                console($"Visited: {index}");
                 if (index != 0)
                 {
                     path.Add(this.groupings[index - 1]);
                 }
             }
 
-            console($"Minimum Cost is: {sum}");
+            return path;
+        }
+
+        /// <summary>
+        /// Finds path in group through adjacent tiles
+        /// </summary>
+        /// 
+        /// <param name="group">Group of crops to find path through.</param>
+        public List<ActionableTile> findFillPath(Group group)
+        {
+            List<ActionableTile> path = new List<ActionableTile>();
+
+            foreach (Tile tile in group.getList())
+            {
+                this.map[tile.y][tile.x].reset();
+            }
+
+            Tile closest = group.findClosestTile(Game1.player.getTileX(), Game1.player.getTileY()).Item1;
+
+            this.getActionableTiles(group, closest, path);
+
+            foreach (Tile tile in group.getList())
+            {
+                if (!tile.visited)
+                {
+                    this.getActionableTiles(group, tile, path);
+                }
+            }
 
             return path;
+        }
+
+        /// <summary>
+        /// Recursive function for finding path in group through adjacent tiles
+        /// </summary>
+        /// 
+        /// <param name="group">Group of crops to find path through.</param>
+        /// <param name="tile">Last tile visited.</param>
+        /// <param name="path">Path so far.</param>
+        public bool getActionableTiles(Group group, Tile tile, List<ActionableTile> path)
+        {
+            if (tile.visited == true)
+            {
+                return true;
+            } else
+            {
+                // Start a new action
+                ActionableTile actionable = new ActionableTile(ActionableTile.Action.Water);
+
+                tile.visited = true;
+
+                if (tile.block)
+                {
+                    Tile adjacentUnwatered = null;
+                    Tile adjacentWatered = null;
+                    Tile adjacentUnwaterable = null;
+
+                    // If you can stand on adjacents, do it.
+                    foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
+                    {
+                        if (direction.Item3(tile.y + direction.Item1, tile.x + direction.Item2))
+                        {
+                            Tile neighbor = this.map[tile.y + direction.Item1][tile.x + direction.Item2];
+                            if (neighbor.waterable)
+                            {
+                                if (!neighbor.visited && group.Contains(neighbor))
+                                {
+                                    adjacentUnwatered = neighbor;
+                                }
+                                else if (adjacentWatered == null && group.Contains(neighbor))
+                                {
+                                    adjacentWatered = neighbor;
+                                }
+                                else if (adjacentUnwaterable == null && !neighbor.block)
+                                {
+                                    adjacentUnwaterable = neighbor;
+                                }
+                            }
+                        }
+                    }
+
+                    // If you can water diagonals, do it.
+                    if (adjacentUnwatered != null)
+                    {
+                        foreach (Tuple<int, int, Func<int, int, bool>> direction in this.diagonals)
+                        {
+                            if (direction.Item3(tile.y + direction.Item1, tile.x + direction.Item2))
+                            {
+                                Tile neighbor = this.map[tile.y + direction.Item1][tile.x + direction.Item2];
+                                if (neighbor.waterable)
+                                {
+                                    if (!neighbor.visited && group.Contains(neighbor))
+                                    {
+                                        adjacentUnwatered = neighbor;
+                                    }
+                                    else if (adjacentWatered == null && group.Contains(neighbor))
+                                    {
+                                        adjacentWatered = neighbor;
+                                    }
+                                    else if (adjacentUnwaterable == null && !neighbor.block)
+                                    {
+                                        adjacentUnwaterable = neighbor;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Set possible standing point.
+                    if (adjacentUnwatered != null)
+                    {
+                        // If its unwatered, just run there
+                        return this.getActionableTiles(group, adjacentUnwatered, path);
+                    }
+                    else if (adjacentWatered != null)
+                    {
+                        actionable.setStand(adjacentWatered.getPoint());
+                    }
+                    else if (adjacentUnwaterable != null)
+                    {
+                        actionable.setStand(adjacentUnwaterable.getPoint());
+                    }
+                }
+                else
+                {
+                    // Set this as standing position
+                    actionable.setStand(tile.getPoint());
+                }
+
+                // Water here
+                actionable.pushExecuteOn(tile.getPoint());
+
+                // If you can water adjacents, do it.
+                foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions) {
+                    if (direction.Item3(tile.y + direction.Item1, tile.x + direction.Item2))
+                    {
+                        Tile neighbor = this.map[tile.y + direction.Item1][tile.x + direction.Item2];
+                        if (neighbor.waterable && !neighbor.visited)
+                        {
+                            actionable.pushExecuteOn(neighbor.getPoint());
+                            neighbor.visited = true;
+                        }
+                    }
+                }
+
+                // If you can water diagonals, do it.
+                foreach (Tuple<int, int, Func<int, int, bool>> direction in this.diagonals)
+                {
+                    if (direction.Item3(tile.y + direction.Item1, tile.x + direction.Item2))
+                    {
+                        Tile neighbor = this.map[tile.y + direction.Item1][tile.x + direction.Item2];
+                        if (neighbor.waterable && !neighbor.visited)
+                        {
+                            actionable.pushExecuteOn(neighbor.getPoint());
+                            neighbor.visited = true;
+                        }
+                    }
+                }
+
+                path.Add(actionable);
+            }
+
+            bool results = true;
+
+            foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
+            {
+                if (direction.Item3(tile.y + direction.Item1, tile.x + direction.Item2))
+                {
+                    Tile neighbor = this.map[tile.y + direction.Item1][tile.x + direction.Item2];
+                    results = results && this.getActionableTiles(group, neighbor, path);
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Finds the closest refill location
+        /// </summary>
+        public bool getClosestRefill(Tile result, Tile last, Tile current)
+        {
+            if (current.block)
+            {
+                return false;
+            }
+
+            if (current.water)
+            {
+                result = current;
+                return true;
+            }
+ 
+            foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
+            {
+                if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                {
+                    Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
+                    
+                    if (this.getClosestRefill(result, last, neighbor))
+                    {
+                        if (last == null)
+                        {
+                            last = current;
+                        }
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }

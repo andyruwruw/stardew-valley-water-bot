@@ -24,6 +24,8 @@ namespace WaterBot.Framework
 
         public bool visited;
 
+        public bool waterCheck;
+
         public Tile(int x, int y, bool block, bool water, bool waterable)
         {
             this.x = x;
@@ -34,6 +36,7 @@ namespace WaterBot.Framework
             this.waterable = waterable;
 
             this.visited = false;
+            this.waterCheck = false;
         }
 
         /// <summary>

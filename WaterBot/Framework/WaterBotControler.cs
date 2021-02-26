@@ -27,6 +27,10 @@ namespace WaterBot.Framework
 
         public List<ActionableTile> order;
 
+        private ActionableTile refillStation;
+
+        public console console;
+
         public WaterBotControler()
         {
             this.active = false;
@@ -40,6 +44,7 @@ namespace WaterBot.Framework
         /// <param name="console">Function for printing to debug console.</param>
         public void start(console console)
         {
+            this.console = console;
             this.active = true;
 
             this.displayMessage("Time to start watering!", 2);
@@ -50,14 +55,14 @@ namespace WaterBot.Framework
             if (!this.active) return;
 
             // Group waterable tiles
-            this.map.findGroupings(console);
+            this.map.findGroupings(this.console);
 
             if (!this.active) return;
 
             this.currentGroup = 0;
             this.currentTile = 0;
 
-            this.path = this.map.findGroupPath(console);
+            this.path = this.map.findGroupPath(this.console);
 
             if (!this.active) return;
 
@@ -80,33 +85,29 @@ namespace WaterBot.Framework
 
             if (!this.active) return;
 
-            if (Game1.player.CurrentTool is WateringCan)
+            if (Game1.player.Stamina <= 2f)
             {
-                Point point;
+                this.exhausted();
+                return;
+            }
 
-                do
-                {
-                    if (((WateringCan)Game1.player.CurrentTool).WaterLeft <= 0)
-                    {
-                        //this.refillWater();
-                    }
+            if (((WateringCan)Game1.player.CurrentTool).WaterLeft <= 0)
+            {
+                this.refillWater();
 
-                    if (Game1.player.Stamina <= 2f)
-                    {
-                        this.exhausted();
-                        return;
-                    }
+                return;
+            }
 
-                    point = this.order[this.currentTile].Pop();
-                    this.water(point);
-                    Thread.Sleep(1000);
+            Point point = this.order[this.currentTile].Pop();
 
-                } while (point.X != -1);
+            if (point.X != -1)
+            {
+                this.water(point);
 
-                Task.Delay(new TimeSpan(0, 0, 0, 0, 1000)).ContinueWith(o => { this.navigate(); });
+                Task.Delay(new TimeSpan(0, 0, 0, 0, 800)).ContinueWith(o => { this.startWatering(c, location); });
             } else
             {
-                this.stop();
+                this.navigate();
             }
         }
 
@@ -117,6 +118,21 @@ namespace WaterBot.Framework
         /// <param name="tile">Tile to water.</param>
         public void water(Point tile)
         {
+            if (Game1.player.getTileY() > tile.Y)
+            {
+                Game1.player.FacingDirection = 0;
+            }
+            else if (Game1.player.getTileY() < tile.Y)
+            {
+                Game1.player.FacingDirection = 2;
+            } else if (Game1.player.getTileX() > tile.X)
+            {
+                Game1.player.FacingDirection = 3;
+            } else if (Game1.player.getTileX() < tile.X)
+            {
+                Game1.player.FacingDirection = 1;
+            } 
+
             if (Game1.player.isEmoteAnimating)
             {
                 Game1.player.EndEmoteAnimation();
@@ -217,20 +233,44 @@ namespace WaterBot.Framework
             Game1.player.controller = new PathFindController(Game1.player, Game1.getFarm(), this.order[this.currentTile].getStand(), 2, this.startWatering);
         }
 
+        public void navigateNoUpdate()
+        {
+            Game1.player.controller = new PathFindController(Game1.player, Game1.getFarm(), this.order[this.currentTile].getStand(), 2, this.startWatering);
+        }
+
         public void refillWater()
         {
             if (!this.active) return;
 
-            Tile water = null;
-            Tile stand = null;
+            Tile playerLocation = this.map.map[Game1.player.getTileY()][Game1.player.getTileX()];
 
-            Tile current = this.map.map[Game1.player.getTileX()][Game1.player.getTileY()];
-
-            this.map.getClosestRefill(water, stand, current);
+            this.refillStation = this.map.getClosestRefill(playerLocation, this.console);
 
             if (!this.active) return;
 
-            Game1.player.controller = new PathFindController(Game1.player, Game1.getFarm(), stand.getPoint(), 2, (Character c, GameLocation location) => { this.water(water.getPoint()); });
+            Game1.player.controller = new PathFindController(Game1.player, Game1.getFarm(), refillStation.getStand(), 2, this.startRefilling);
+        }
+
+        public void startRefilling(Character c, GameLocation location)
+        {
+            Game1.player.controller = null;
+
+            if (!this.active) return;
+
+            if (Game1.player.Stamina <= 2f)
+            {
+                this.exhausted();
+                return;
+            }
+
+            Point point = this.refillStation.Pop();
+
+            if (point.X != -1)
+            {
+                this.water(point);
+
+                Task.Delay(new TimeSpan(0, 0, 0, 0, 800)).ContinueWith(o => { this.navigateNoUpdate(); });
+            }
         }
 
         /// <summary>

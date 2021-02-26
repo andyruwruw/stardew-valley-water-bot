@@ -4,6 +4,7 @@ using StardewValley.TerrainFeatures;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using System.Threading;
 
 namespace WaterBot.Framework
 {
@@ -198,6 +199,31 @@ namespace WaterBot.Framework
                 foreach (Tile tile in row)
                 {
                     charRow += tile.ToString();
+                }
+                console(charRow);
+            }
+        }
+
+        /// <summary>
+        /// Displays farm in console.
+        /// </summary>
+        /// 
+        /// <param name="console">Function for printing to debug console.</param>
+        public void displayMapVisited(console console)
+        {
+            foreach (List<Tile> row in this.map)
+            {
+                string charRow = "";
+
+                foreach (Tile tile in row)
+                {
+                    if (tile.waterCheck)
+                    {
+                        charRow += '@';
+                    } else
+                    {
+                        charRow += tile.ToString();
+                    }
                 }
                 console(charRow);
             }
@@ -658,199 +684,219 @@ namespace WaterBot.Framework
                 this.map[tile.y][tile.x].reset();
             }
 
-            Tile closest = group.findClosestTile(Game1.player.getTileX(), Game1.player.getTileY()).Item1;
+            List<Tile> queue = new List<Tile>();
+            queue.Add(group.findClosestTile(Game1.player.getTileX(), Game1.player.getTileY()).Item1);
 
-            this.getActionableTiles(group, closest, path);
-
-            foreach (Tile tile in group.getList())
+            bool keepGoing = true;
+            do
             {
-                if (!tile.visited)
+                keepGoing = false;
+
+                while (queue.Count > 0)
                 {
-                    this.getActionableTiles(group, tile, path);
+                    Tile current = queue[0];
+                    queue.RemoveAt(0);
+
+                    if (current.visited)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        // Start a new action
+                        ActionableTile actionable = new ActionableTile(ActionableTile.Action.Water);
+                        current.visited = true;
+
+                        if (current.block)
+                        {
+                            Tile adjacentUnwatered = null;
+                            Tile adjacentWatered = null;
+                            Tile adjacentUnwaterable = null;
+
+                            // If you can stand on adjacents, do it.
+                            foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
+                            {
+                                if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                                {
+                                    Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
+                                    if (neighbor.waterable)
+                                    {
+                                        if (!neighbor.visited && group.Contains(neighbor))
+                                        {
+                                            adjacentUnwatered = neighbor;
+                                        }
+                                        else if (adjacentWatered == null && group.Contains(neighbor))
+                                        {
+                                            adjacentWatered = neighbor;
+                                        }
+                                        else if (adjacentUnwaterable == null && !neighbor.block)
+                                        {
+                                            adjacentUnwaterable = neighbor;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // If you can water diagonals, do it.
+                            if (adjacentUnwatered != null)
+                            {
+                                foreach (Tuple<int, int, Func<int, int, bool>> direction in this.diagonals)
+                                {
+                                    if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                                    {
+                                        Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
+                                        if (neighbor.waterable)
+                                        {
+                                            if (!neighbor.visited && group.Contains(neighbor))
+                                            {
+                                                adjacentUnwatered = neighbor;
+                                            }
+                                            else if (adjacentWatered == null && group.Contains(neighbor))
+                                            {
+                                                adjacentWatered = neighbor;
+                                            }
+                                            else if (adjacentUnwaterable == null && !neighbor.block)
+                                            {
+                                                adjacentUnwaterable = neighbor;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Set possible standing point.
+                            if (adjacentUnwatered != null)
+                            {
+                                // If its unwatered, just run there
+                                queue.Add(adjacentUnwatered);
+                                continue;
+                            }
+                            else if (adjacentWatered != null)
+                            {
+                                actionable.setStand(adjacentWatered.getPoint());
+                            }
+                            else if (adjacentUnwaterable != null)
+                            {
+                                actionable.setStand(adjacentUnwaterable.getPoint());
+                            }
+                        }
+                        else
+                        {
+                            // Set this as standing position
+                            actionable.setStand(current.getPoint());
+                        }
+
+                        // Water here
+                        actionable.pushExecuteOn(current.getPoint());
+
+                        // If you can water adjacents, do it.
+                        foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
+                        {
+                            if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                            {
+                                Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
+                                if (neighbor.waterable && !neighbor.visited)
+                                {
+                                    actionable.pushExecuteOn(neighbor.getPoint());
+                                    neighbor.visited = true;
+                                }
+                            }
+                        }
+
+                        // If you can water diagonals, do it.
+                        foreach (Tuple<int, int, Func<int, int, bool>> direction in this.diagonals)
+                        {
+                            if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                            {
+                                Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
+                                if (neighbor.waterable && !neighbor.visited)
+                                {
+                                    actionable.pushExecuteOn(neighbor.getPoint());
+                                    neighbor.visited = true;
+                                }
+                            }
+                        }
+
+                        path.Add(actionable);
+                    }
                 }
-            }
+
+                foreach (Tile tile in group.getList())
+                {
+                    if (!tile.visited)
+                    {
+                        queue.Add(tile);
+                        keepGoing = true;
+                        break;
+                    }
+                }
+            } while (keepGoing);
 
             return path;
         }
 
         /// <summary>
-        /// Recursive function for finding path in group through adjacent tiles
-        /// </summary>
-        /// 
-        /// <param name="group">Group of crops to find path through.</param>
-        /// <param name="tile">Last tile visited.</param>
-        /// <param name="path">Path so far.</param>
-        public bool getActionableTiles(Group group, Tile tile, List<ActionableTile> path)
-        {
-            if (tile.visited == true)
-            {
-                return true;
-            } else
-            {
-                // Start a new action
-                ActionableTile actionable = new ActionableTile(ActionableTile.Action.Water);
-
-                tile.visited = true;
-
-                if (tile.block)
-                {
-                    Tile adjacentUnwatered = null;
-                    Tile adjacentWatered = null;
-                    Tile adjacentUnwaterable = null;
-
-                    // If you can stand on adjacents, do it.
-                    foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
-                    {
-                        if (direction.Item3(tile.y + direction.Item1, tile.x + direction.Item2))
-                        {
-                            Tile neighbor = this.map[tile.y + direction.Item1][tile.x + direction.Item2];
-                            if (neighbor.waterable)
-                            {
-                                if (!neighbor.visited && group.Contains(neighbor))
-                                {
-                                    adjacentUnwatered = neighbor;
-                                }
-                                else if (adjacentWatered == null && group.Contains(neighbor))
-                                {
-                                    adjacentWatered = neighbor;
-                                }
-                                else if (adjacentUnwaterable == null && !neighbor.block)
-                                {
-                                    adjacentUnwaterable = neighbor;
-                                }
-                            }
-                        }
-                    }
-
-                    // If you can water diagonals, do it.
-                    if (adjacentUnwatered != null)
-                    {
-                        foreach (Tuple<int, int, Func<int, int, bool>> direction in this.diagonals)
-                        {
-                            if (direction.Item3(tile.y + direction.Item1, tile.x + direction.Item2))
-                            {
-                                Tile neighbor = this.map[tile.y + direction.Item1][tile.x + direction.Item2];
-                                if (neighbor.waterable)
-                                {
-                                    if (!neighbor.visited && group.Contains(neighbor))
-                                    {
-                                        adjacentUnwatered = neighbor;
-                                    }
-                                    else if (adjacentWatered == null && group.Contains(neighbor))
-                                    {
-                                        adjacentWatered = neighbor;
-                                    }
-                                    else if (adjacentUnwaterable == null && !neighbor.block)
-                                    {
-                                        adjacentUnwaterable = neighbor;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Set possible standing point.
-                    if (adjacentUnwatered != null)
-                    {
-                        // If its unwatered, just run there
-                        return this.getActionableTiles(group, adjacentUnwatered, path);
-                    }
-                    else if (adjacentWatered != null)
-                    {
-                        actionable.setStand(adjacentWatered.getPoint());
-                    }
-                    else if (adjacentUnwaterable != null)
-                    {
-                        actionable.setStand(adjacentUnwaterable.getPoint());
-                    }
-                }
-                else
-                {
-                    // Set this as standing position
-                    actionable.setStand(tile.getPoint());
-                }
-
-                // Water here
-                actionable.pushExecuteOn(tile.getPoint());
-
-                // If you can water adjacents, do it.
-                foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions) {
-                    if (direction.Item3(tile.y + direction.Item1, tile.x + direction.Item2))
-                    {
-                        Tile neighbor = this.map[tile.y + direction.Item1][tile.x + direction.Item2];
-                        if (neighbor.waterable && !neighbor.visited)
-                        {
-                            actionable.pushExecuteOn(neighbor.getPoint());
-                            neighbor.visited = true;
-                        }
-                    }
-                }
-
-                // If you can water diagonals, do it.
-                foreach (Tuple<int, int, Func<int, int, bool>> direction in this.diagonals)
-                {
-                    if (direction.Item3(tile.y + direction.Item1, tile.x + direction.Item2))
-                    {
-                        Tile neighbor = this.map[tile.y + direction.Item1][tile.x + direction.Item2];
-                        if (neighbor.waterable && !neighbor.visited)
-                        {
-                            actionable.pushExecuteOn(neighbor.getPoint());
-                            neighbor.visited = true;
-                        }
-                    }
-                }
-
-                path.Add(actionable);
-            }
-
-            bool results = true;
-
-            foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
-            {
-                if (direction.Item3(tile.y + direction.Item1, tile.x + direction.Item2))
-                {
-                    Tile neighbor = this.map[tile.y + direction.Item1][tile.x + direction.Item2];
-                    results = results && this.getActionableTiles(group, neighbor, path);
-                }
-            }
-
-            return results;
-        }
-
-        /// <summary>
         /// Finds the closest refill location
         /// </summary>
-        public bool getClosestRefill(Tile result, Tile last, Tile current)
+        public ActionableTile getClosestRefill(Tile start, console console)
         {
-            if (current.block)
+            foreach (List<Tile> row in this.map)
             {
-                return false;
+                foreach (Tile tile in row)
+                {
+                    tile.waterCheck = false;
+                }
             }
 
-            if (current.water)
+            List<Tile> queue = new List<Tile>();
+            queue.Add(start);
+
+            Tile current = null;
+            Tile last = null;
+
+            while (queue.Count > 0)
             {
-                result = current;
-                return true;
-            }
- 
-            foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
-            {
-                if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                last = current;
+                current = queue[0];
+                queue.RemoveAt(0);
+
+                if (current.waterCheck)
                 {
-                    Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
-                    
-                    if (this.getClosestRefill(result, last, neighbor))
+                    continue;
+                }
+
+                current.waterCheck = true;
+
+                if (current.water)
+                {
+                    List<Point> actions = new List<Point>();
+                    actions.Add(current.getPoint());
+
+                    if (current.block)
                     {
-                        if (last == null)
-                        {
-                            last = current;
-                        }
-                        return true;
+                        return new ActionableTile(last.getPoint(), actions, ActionableTile.Action.Refill);
+                    }
+                    else
+                    {
+                        return new ActionableTile(current.getPoint(), actions, ActionableTile.Action.Refill);
+                    }
+                }
+
+                if (current.block)
+                {
+                    continue;
+                }
+
+                foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
+                {
+                    if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                    {
+                        queue.Add(this.map[current.y + direction.Item1][current.x + direction.Item2]);
                     }
                 }
             }
 
-            return false;
+            return null;
         }
     }
 }

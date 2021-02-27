@@ -12,7 +12,7 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  solution: '**/*.sln'
+  solution: 'WaterBot.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Debug'
 

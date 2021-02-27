@@ -317,11 +317,6 @@ namespace WaterBot.Framework
                     this.groupings.Add(solo);
                 }
             }
-
-            foreach (Group group in this.groupings)
-            {
-                this.displayGroup(console, group);
-            }
         }
 
         /// <summary>
@@ -682,12 +677,9 @@ namespace WaterBot.Framework
         /// <param name="group">Group of crops to find path through.</param>
         public List<ActionableTile> findFillPath(Group group, console console)
         {
-            console("Time to find a path");
             // Start a new path of actionable tiles
             // Actionable tiles are a standing place, and nearby tiles to water
             List<ActionableTile> path = new List<ActionableTile>();
-
-            console("Marking all as unvisted");
 
             // Reset the visited values of each tile in group.
             foreach (Tile tile in group.getList())
@@ -706,7 +698,6 @@ namespace WaterBot.Framework
 
                 while (stack.Count > 0)
                 {
-                    console("Popping a Tile");
                     Tile current = stack[stack.Count - 1];
                     stack.RemoveAt(stack.Count - 1);
 
@@ -837,8 +828,6 @@ namespace WaterBot.Framework
                     }
                 }
             } while (keepGoing);
-
-            this.displayMapVisited(console);
 
             return path;
         }

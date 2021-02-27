@@ -3,11 +3,10 @@
 # Add steps that publish symbols, save build artifacts, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
-name: Azure Pipeline
+name: WaterBot CI
 
-on:
-  push:
-  pull_request:
+trigger:
+- main
 
 pool:
   vmImage: 'windows-latest'

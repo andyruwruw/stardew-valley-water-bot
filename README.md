@@ -6,7 +6,9 @@
 
 **WaterBot** is a [Stardew Valley](https://www.stardewvalley.net/) mod that helps you water your crops while staying as vanilla as possible.
 
-Upon watering a plant, the mod will control your player to water the rest of your plants, fetching water when required. Any buttons pressed while active will turn the bot off.
+When you `right-click` a plant with your `Watering Can`, the bot will take control of your character, **watering all your crops** and **refilling the water** can at the nearest water source whenever necessary.
+
+Left-click at any point to stop the bot. The bot will automatically stop if you have low stamina.
 
 # Contents
 
@@ -28,9 +30,13 @@ Upon watering a plant, the mod will control your player to water the rest of you
 
 # Implementation
 
-To begin the mod listens for whenever the player left clicks with a watering can on their farm. If the targeted block is Hoed Dirt, it begins the bot.
+To begin the mod listens for whenever the player `right-clicks`.
 
-The bot first reads the farm map data, marking each tile as walkable, refillable, and in need of watering.
+If the target block is **Hoed Dirt** with a **crop** and the player is holding their **Watering Can**, the bot is started.
+
+### Loading the Players Farm
+
+The bot first reads the farm map data, marking each tile as `walkable`, `refillable`, and in `need of watering`.
 
 The tiles that need watering are then grouped based on adjacent tiles that also need watering.
 

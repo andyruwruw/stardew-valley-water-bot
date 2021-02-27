@@ -44,9 +44,7 @@ The bot first looks through the farm map data, going tile by tile and marking th
 
 All the tiles are placed in a 2D array. Any waterable crops are also placed in their own array.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/load_map.gif">
-</p>
+<img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/load_map.gif">
 
 For the image above, the tiles are colors accordingly:
 
@@ -62,9 +60,7 @@ For the image above, the tiles are colors accordingly:
 
 Tiles with crops that need watering are then grouped based on adjacency using depth first search.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/find_groups.gif">
-</p>
+<img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/find_groups.gif">
 
 ### 4. Cost of Traveling Between Groups
 
@@ -74,9 +70,7 @@ The algorithm starts at the tile closest to the centroid of each grouping.
 
 The cost of traveling to each group is also done from the players current perspective.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/cost_matrix.gif">
-</p>
+<img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/cost_matrix.gif">
 
 This then gives us a nice cost matrix!
 
@@ -105,9 +99,7 @@ At each tile, all adjacent (now include diagonals) are watered as well. This mea
 
 If a block cannot be stood on, the bot chooses the next best option and waters it from there.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/fill_group.gif">
-</p>
+<img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/fill_group.gif">
 
 ### 7. Out of Water!
 
@@ -117,6 +109,4 @@ The closest refillable spot is found using breadth-first-search from the players
 
 Once the spot is found, the bot navigates the player to the closest spot to the water, refills, then returns to watering.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/refill_water.gif">
-</p>
+<img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/refill_water.gif">

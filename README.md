@@ -32,7 +32,7 @@ When you **right-click** a plant with your **Watering Can**, the bot will take c
 
 To begin the mod listens for whenever the player `right-clicks`. If the player is clicking a crop with their watering can, the bot starts.
 
-### 2. Loading the Players Farm
+### 2. Loading the Player's Farm
 
 The bot first looks through the farm map data, going tile by tile and marking the following traits:
 
@@ -58,7 +58,7 @@ For the image above, the tiles are colors accordingly:
 
 ### 3. Find Grouped Crops
 
-Tiles with crops that need watering are then grouped based on adjacency using depth first search.
+Tiles with crops that need watering are then grouped based on adjacency using depth-first search.
 
 <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/find_groups.gif">
 

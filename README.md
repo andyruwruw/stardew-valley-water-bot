@@ -62,7 +62,7 @@ Tiles with crops that need watering are then grouped based on adjacency using de
 
 <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/find_groups.gif">
 
-### 4. Cost of Traveling Between Groups
+### 4. Cost of Travelling Between Groups
 
 The both then uses A* pathfinding to determine the cost of traveling from one group to another.
 

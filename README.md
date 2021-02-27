@@ -64,11 +64,11 @@ Tiles with crops that need watering are then grouped based on adjacency using de
 
 ### 4. Cost of Travelling Between Groups
 
-The both then uses A* pathfinding to determine the cost of traveling from one group to another.
+The bot then uses A* pathfinding to determine the cost of traveling from one group to another.
 
 The algorithm starts at the tile closest to the centroid of each grouping.
 
-The cost of traveling to each group is also done from the players current position.
+The cost of traveling to each group is also done from the player's current position.
 
 <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/cost_matrix.gif">
 

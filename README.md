@@ -68,11 +68,11 @@ The both then uses A* pathfinding to determine the cost of traveling from one gr
 
 The algorithm starts at the tile closest to the centroid of each grouping.
 
-The cost of traveling to each group is also done from the players current perspective.
+The cost of traveling to each group is also done from the players current position.
 
 <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/cost_matrix.gif">
 
-This then gives us a nice cost matrix!
+This gives us a nice cost matrix!
 
 |        | Player | Purple | Yellow | Blue |
 |--------|--------|--------|--------|------|
@@ -89,13 +89,13 @@ We need to find the shortest path through all the groups, starting at the player
 
 The bot runs a greedy approach to solving the travelling salesman problem.
 
-The starting point is the player's position, and the shortest path through all the groups is search for.
+The starting point is the player's position.
 
 ### 6. Watering the Group
 
 For each group, depth first search is applied to fill in the tiles.
 
-At each tile, all adjacent (now include diagonals) are watered as well. This means we can skip walking to every block and simply water anything around us.
+At each tile, all adjacent (now including diagonals) are watered as well. This means we can skip walking to every block and simply water anything around us.
 
 If a block cannot be stood on, the bot chooses the next best option and waters it from there.
 

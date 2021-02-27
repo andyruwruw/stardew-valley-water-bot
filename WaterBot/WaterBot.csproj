@@ -23,7 +23,10 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <GamePath>bin\Debug\</GamePath>
+    <GameExecutableName></GameExecutableName>
     <EnableModDeploy>false</EnableModDeploy>
+  </PropertyGroup>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>

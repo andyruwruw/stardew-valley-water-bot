@@ -38,6 +38,10 @@ If the target block is **Hoed Dirt** with a **crop** and the player is holding t
 
 The bot first reads the farm map data, marking each tile as `walkable`, `refillable`, and in `need of watering`.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/load_map.gif">
+</p>
+
 The tiles that need watering are then grouped based on adjacent tiles that also need watering.
 
 The greedy approach to the travelling salesman problem is then applied to find a path through the groups.

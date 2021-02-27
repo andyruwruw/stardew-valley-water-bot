@@ -6,6 +6,8 @@
 
 **WaterBot** is a [Stardew Valley](https://www.stardewvalley.net/) mod that helps you water your crops while staying as vanilla as possible.
 
+Unlike other mods, watering your crops will still cost you the same amount of time and energy as if you had done it yourself, just a little less tedious.
+
 When you **right-click** a plant with your **Watering Can**, the bot will take control of your character, **watering all your crops** and **refilling the water** can at the nearest water source whenever necessary.
 
 **Left-click** at any point to stop the bot. The bot will automatically stop if you have low stamina.
@@ -23,10 +25,6 @@ When you **right-click** a plant with your **Watering Can**, the bot will take c
 2. Download this mod and unzip the contents.
 3. Place the mod in your Mods folder.
 4. Run the game using SMAPI.
-
-# Configure
-
-# Compatibility
 
 # Implementation
 

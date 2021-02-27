@@ -62,7 +62,7 @@ Tiles with crops that need watering are then grouped based on adjacency using de
 
 <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/find_groups.gif">
 
-### 4. Cost of Travelling Between Groups
+### 4. Cost of Traveling Between Groups
 
 The bot then uses A* pathfinding to determine the cost of traveling from one group to another.
 
@@ -81,11 +81,11 @@ This gives us a nice cost matrix!
 | Yellow | 5      | 6      | -1     | 6    |
 | Blue   | 5      | 8      | 6      | -1   |
 
-At this point any unreachable groups are disgarded.
+At this point any unreachable groups are disregarded.
 
-### 5. The Travelling Water Man
+### 5. The Traveling Water Man
 
-We need to find the shortest path through all the groups, starting at the players current position.
+We need to find the shortest path through all the groups, starting at the player's current position.
 
 The bot runs a greedy approach to solving the travelling salesman problem.
 
@@ -105,7 +105,7 @@ If a block cannot be stood on, the bot chooses the next best option and waters i
 
 When the watering can is low, the bot will go to the nearest source of water to refill.
 
-The closest refillable spot is found using breadth-first-search from the players position.
+The closest refillable spot is found using breadth-first-search from the player's position.
 
 Once the spot is found, the bot navigates the player to the closest spot to the water, refills, then returns to watering.
 

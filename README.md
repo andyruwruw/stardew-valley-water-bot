@@ -107,6 +107,10 @@ At each tile, all adjacent (now include diagonals) are watered as well. This mea
 
 If a block cannot be stood on, the bot chooses the next best option and waters it from there.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/fill_group.gif">
+</p>
+
 ### 7. Out of Water!
 
 When the watering can is low, the bot will go to the nearest source of water to refill.
@@ -114,3 +118,7 @@ When the watering can is low, the bot will go to the nearest source of water to 
 The closest refillable spot is found using breadth-first-search from the players position.
 
 Once the spot is found, the bot navigates the player to the closest spot to the water, refills, then returns to watering.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/refill_water.gif">
+</p>

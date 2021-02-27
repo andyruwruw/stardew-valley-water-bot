@@ -217,7 +217,7 @@ namespace WaterBot.Framework
 
                 foreach (Tile tile in row)
                 {
-                    if (tile.waterCheck)
+                    if (tile.visited)
                     {
                         charRow += '@';
                     } else
@@ -316,6 +316,11 @@ namespace WaterBot.Framework
 
                     this.groupings.Add(solo);
                 }
+            }
+
+            foreach (Group group in this.groupings)
+            {
+                this.displayGroup(console, group);
             }
         }
 
@@ -675,31 +680,55 @@ namespace WaterBot.Framework
         /// </summary>
         /// 
         /// <param name="group">Group of crops to find path through.</param>
-        public List<ActionableTile> findFillPath(Group group)
+        public List<ActionableTile> findFillPath(Group group, console console)
         {
+            console("Time to find a path");
+            // Start a new path of actionable tiles
+            // Actionable tiles are a standing place, and nearby tiles to water
             List<ActionableTile> path = new List<ActionableTile>();
 
+            console("Marking all as unvisted");
+
+            // Reset the visited values of each tile in group.
             foreach (Tile tile in group.getList())
             {
                 this.map[tile.y][tile.x].reset();
             }
 
-            List<Tile> queue = new List<Tile>();
-            queue.Add(group.findClosestTile(Game1.player.getTileX(), Game1.player.getTileY()).Item1);
+            // Queue for depth first search
+            List<Tile> stack = new List<Tile>();
+            stack.Add(group.findClosestTile(Game1.player.getTileX(), Game1.player.getTileY()).Item1);
 
-            bool keepGoing = true;
+            bool keepGoing;
             do
             {
                 keepGoing = false;
 
-                while (queue.Count > 0)
+                while (stack.Count > 0)
                 {
-                    Tile current = queue[0];
-                    queue.RemoveAt(0);
+                    console("Popping a Tile");
+                    Tile current = stack[stack.Count - 1];
+                    stack.RemoveAt(stack.Count - 1);
 
                     if (current.visited)
                     {
                         continue;
+                    }
+                    else if (current.watered)
+                    {
+                        current.visited = true;
+
+                        foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
+                        {
+                            if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                            {
+                                Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
+                                if (!neighbor.visited && group.Contains(neighbor))
+                                {
+                                    stack.Add(neighbor);
+                                }
+                            }
+                        }
                     }
                     else
                     {
@@ -709,76 +738,41 @@ namespace WaterBot.Framework
 
                         if (current.block)
                         {
-                            Tile adjacentUnwatered = null;
-                            Tile adjacentWatered = null;
-                            Tile adjacentUnwaterable = null;
+                            int score = 0;
+                            Tile bestOption = null;
 
                             // If you can stand on adjacents, do it.
-                            foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
+                            foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions.Concat(this.diagonals))
                             {
                                 if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
                                 {
                                     Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
-                                    if (neighbor.waterable)
+                                    if (neighbor.block)
                                     {
-                                        if (!neighbor.visited && group.Contains(neighbor))
-                                        {
-                                            adjacentUnwatered = neighbor;
-                                        }
-                                        else if (adjacentWatered == null && group.Contains(neighbor))
-                                        {
-                                            adjacentWatered = neighbor;
-                                        }
-                                        else if (adjacentUnwaterable == null && !neighbor.block)
-                                        {
-                                            adjacentUnwaterable = neighbor;
-                                        }
+                                        continue;
+                                    }
+
+                                    int neighborScore = 0;
+
+                                    if (group.Contains(neighbor)) neighborScore += 5;
+                                    if (neighbor.waterable) neighborScore += 5;
+                                    if (!neighbor.watered) neighborScore += 5;
+                                    if (!neighbor.visited) neighborScore += 5;
+
+                                    if (neighborScore > score)
+                                    {
+                                        bestOption = neighbor;
                                     }
                                 }
                             }
 
-                            // If you can water diagonals, do it.
-                            if (adjacentUnwatered != null)
+                            if (bestOption == null)
                             {
-                                foreach (Tuple<int, int, Func<int, int, bool>> direction in this.diagonals)
-                                {
-                                    if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
-                                    {
-                                        Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
-                                        if (neighbor.waterable)
-                                        {
-                                            if (!neighbor.visited && group.Contains(neighbor))
-                                            {
-                                                adjacentUnwatered = neighbor;
-                                            }
-                                            else if (adjacentWatered == null && group.Contains(neighbor))
-                                            {
-                                                adjacentWatered = neighbor;
-                                            }
-                                            else if (adjacentUnwaterable == null && !neighbor.block)
-                                            {
-                                                adjacentUnwaterable = neighbor;
-                                            }
-                                        }
-                                    }
-                                }
+                                continue;
                             }
 
                             // Set possible standing point.
-                            if (adjacentUnwatered != null)
-                            {
-                                // If its unwatered, just run there
-                                queue.Add(adjacentUnwatered);
-                                continue;
-                            }
-                            else if (adjacentWatered != null)
-                            {
-                                actionable.setStand(adjacentWatered.getPoint());
-                            }
-                            else if (adjacentUnwaterable != null)
-                            {
-                                actionable.setStand(adjacentUnwaterable.getPoint());
-                            }
+                            actionable.setStand(bestOption.getPoint());
                         }
                         else
                         {
@@ -787,18 +781,30 @@ namespace WaterBot.Framework
                         }
 
                         // Water here
-                        actionable.pushExecuteOn(current.getPoint());
+                        if (current.getPoint() == actionable.getStand())
+                        {
+                            actionable.pushExecuteOn(current.getPoint());
+                            current.watered = true;
+                        } else if (this.map[actionable.getStand().Y][actionable.getStand().X].waterable && !this.map[actionable.getStand().Y][actionable.getStand().X].watered)
+                        {
+                            actionable.pushExecuteOn(actionable.getStand());
+                            this.map[actionable.getStand().Y][actionable.getStand().X].watered = true;
+                        }
 
                         // If you can water adjacents, do it.
                         foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
                         {
-                            if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                            if (direction.Item3(actionable.getStand().Y + direction.Item1, actionable.getStand().X + direction.Item2))
                             {
-                                Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
-                                if (neighbor.waterable && !neighbor.visited)
+                                Tile neighbor = this.map[actionable.getStand().Y + direction.Item1][actionable.getStand().X + direction.Item2];
+                                if (neighbor.waterable && !neighbor.watered)
                                 {
                                     actionable.pushExecuteOn(neighbor.getPoint());
-                                    neighbor.visited = true;
+                                    neighbor.watered = true;
+                                }
+                                if (!neighbor.visited && group.Contains(neighbor))
+                                {
+                                    stack.Add(neighbor);
                                 }
                             }
                         }
@@ -806,13 +812,13 @@ namespace WaterBot.Framework
                         // If you can water diagonals, do it.
                         foreach (Tuple<int, int, Func<int, int, bool>> direction in this.diagonals)
                         {
-                            if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                            if (direction.Item3(actionable.getStand().Y + direction.Item1, actionable.getStand().X + direction.Item2))
                             {
-                                Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
-                                if (neighbor.waterable && !neighbor.visited)
+                                Tile neighbor = this.map[actionable.getStand().Y + direction.Item1][actionable.getStand().X + direction.Item2];
+                                if (neighbor.waterable && !neighbor.watered)
                                 {
                                     actionable.pushExecuteOn(neighbor.getPoint());
-                                    neighbor.visited = true;
+                                    neighbor.watered = true;
                                 }
                             }
                         }
@@ -825,12 +831,14 @@ namespace WaterBot.Framework
                 {
                     if (!tile.visited)
                     {
-                        queue.Add(tile);
+                        stack.Add(tile);
                         keepGoing = true;
                         break;
                     }
                 }
             } while (keepGoing);
+
+            this.displayMapVisited(console);
 
             return path;
         }

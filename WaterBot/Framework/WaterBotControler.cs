@@ -66,7 +66,7 @@ namespace WaterBot.Framework
 
             if (!this.active) return;
 
-            this.order = this.map.findFillPath(this.path[this.currentGroup]);
+            this.order = this.map.findFillPath(this.path[this.currentGroup], this.console);
 
             if (!this.active) return;
 
@@ -227,7 +227,7 @@ namespace WaterBot.Framework
                     return;
                 }
 
-                this.order = this.map.findFillPath(this.path[this.currentGroup]);
+                this.order = this.map.findFillPath(this.path[this.currentGroup], this.console);
             }
 
             Game1.player.controller = new PathFindController(Game1.player, Game1.getFarm(), this.order[this.currentTile].getStand(), 2, this.startWatering);

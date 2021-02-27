@@ -280,6 +280,7 @@ namespace WaterBot.Framework
         {
             this.active = false;
             Game1.player.controller = null;
+            this.displayMessage("Stopped watering", 1);
         }
 
         /// <summary>
@@ -299,7 +300,7 @@ namespace WaterBot.Framework
         {
             this.active = false;
             Game1.player.controller = null;
-            this.displayMessage("Finished Watering", 1);
+            this.displayMessage("Finished watering", 1);
         }
 
         /// <summary>

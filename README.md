@@ -10,7 +10,9 @@ Unlike other mods, watering your crops will still cost you the same amount of ti
 
 When you **right-click** a not fully grown plant with your **Watering Can**, the bot will take control of your character, **watering all your crops** and **refilling the water** can at the nearest water source whenever necessary.
 
-**Left-click** at any point to stop the bot. The bot will automatically stop if you have low stamina.
+**Press any button** at any point to stop the bot. The bot will automatically stop if you have low stamina.
+
+<img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/find_groups.gif">
 
 # Contents
 

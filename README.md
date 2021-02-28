@@ -1,5 +1,3 @@
- <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/header.gif">
-
 **WaterBot** is a [Stardew Valley](https://www.stardewvalley.net/) mod that helps you water your crops while staying as vanilla as possible.
 
 Unlike other mods, watering your crops will still cost you the same amount of time and energy as if you had done it yourself, just a little less tedious.

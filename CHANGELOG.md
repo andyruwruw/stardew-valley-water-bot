@@ -1,17 +1,17 @@
-# 1.1.0
+# v1.1.0
 
 🚀 New Feature
 
-- Doesn't start bot when harvesting plants and accidently holding Watering Can.
+- Doesn't start bot when harvesting plants and accidentally holding Watering Can.
 - Doesn't water crops that are ready to harvest, unless they are crops that regrow after harvest.
-- Refills water instantly if needed, instead of walking to first group at start.
-- Update keys linked to Nexus and Github
+- Refills water instantly if needed, instead of walking to the first group at the start.
+- Update keys linked to Nexus and Github.
 
 🐛 Bug Fix
 
 - Works with all Watering Can upgrades.
 - Correctly finds standing place next to refillable tile.
-- Check for nearest refillable tile should and take less memory.
+- Finding the nearest refillable tile should and take less memory.
 - Checks for accidental empty groupings.
 - Now exits task if now suitable refill tile is reachable.
 
@@ -20,7 +20,7 @@
 - Removal of unnecessary imports.
 - Provided console feedback on major events.
 
-# 1.0.0
+# v1.0.0
 
 🚀 New Feature
 

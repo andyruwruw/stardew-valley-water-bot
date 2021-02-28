@@ -45,7 +45,7 @@ namespace WaterBot
             {
                 this.console("Player provided interrupt signal. Process stopped.");
                 this.bot.stop();
-            } else if (e.Button == SButton.MouseRight)
+            } else if (e.Button.IsActionButton()) // SButton.MouseRight 
             {
                 if (this.isWateringHoedDirt())
                 {
@@ -61,9 +61,9 @@ namespace WaterBot
         private bool isWateringHoedDirt()
         {
             // Is the player using a Watering Can on their Farm?
-            if (Game1.currentLocation is Farm && Game1.player.CurrentItem is WateringCan)
+            if (Game1.player.CurrentItem is WateringCan)
             {
-                // Find action tiles
+                // Find action tilesw
                 Vector2 mousePosition = Utility.PointToVector2(Game1.getMousePosition()) + new Vector2(Game1.viewport.X, Game1.viewport.Y);
                 Vector2 toolLocation = Game1.player.GetToolLocation(mousePosition);
                 Vector2 tile = Utility.clampToTile(toolLocation);

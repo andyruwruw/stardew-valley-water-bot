@@ -44,7 +44,7 @@ namespace WaterBot.Framework
             this.console = console;
             this.active = true;
 
-            this.displayMessage("Time to start watering!", 2);
+            this.displayMessage("Time to Start Watering!", 2);
 
             // Load map data
             this.map.loadMap();
@@ -74,7 +74,7 @@ namespace WaterBot.Framework
                 return;
             }
 
-            Game1.player.controller = new PathFindController(Game1.player, Game1.getFarm(), this.order[this.currentTile].getStand(), 2, this.startWatering);
+            Game1.player.controller = new PathFindController(Game1.player, Game1.currentLocation, this.order[this.currentTile].getStand(), 2, this.startWatering);
         }
 
         /// <summary>
@@ -211,12 +211,12 @@ namespace WaterBot.Framework
                 this.order = this.map.findFillPath(this.path[this.currentGroup], this.console);
             }
 
-            Game1.player.controller = new PathFindController(Game1.player, Game1.getFarm(), this.order[this.currentTile].getStand(), 2, this.startWatering);
+            Game1.player.controller = new PathFindController(Game1.player, Game1.currentLocation, this.order[this.currentTile].getStand(), 2, this.startWatering);
         }
 
         public void navigateNoUpdate()
         {
-            Game1.player.controller = new PathFindController(Game1.player, Game1.getFarm(), this.order[this.currentTile].getStand(), 2, this.startWatering);
+            Game1.player.controller = new PathFindController(Game1.player, Game1.currentLocation, this.order[this.currentTile].getStand(), 2, this.startWatering);
         }
 
         public void refillWater()
@@ -231,7 +231,7 @@ namespace WaterBot.Framework
 
             if (this.refillStation != null)
             {
-                Game1.player.controller = new PathFindController(Game1.player, Game1.getFarm(), refillStation.getStand(), 2, this.startRefilling);
+                Game1.player.controller = new PathFindController(Game1.player, Game1.currentLocation, refillStation.getStand(), 2, this.startRefilling);
             }
             else
             {
@@ -268,7 +268,7 @@ namespace WaterBot.Framework
         {
             this.active = false;
             Game1.player.controller = null;
-            this.displayMessage("Stopped watering", 1);
+            this.displayMessage("Stopped Watering", 1);
         }
 
         /// <summary>
@@ -279,7 +279,7 @@ namespace WaterBot.Framework
             this.console("Bot interrupted by lack of stamina. Ending process.");
             this.active = false;
             Game1.player.controller = null;
-            this.displayMessage("Tired of watering", 3);
+            this.displayMessage("Tired of Watering", 3);
         }
 
         /// <summary>
@@ -301,7 +301,7 @@ namespace WaterBot.Framework
             this.console("Bot finished watering accessable crops. Ending process.");
             this.active = false;
             Game1.player.controller = null;
-            this.displayMessage("Finished watering", 1);
+            this.displayMessage("Finished Watering", 1);
         }
 
         /// <summary>

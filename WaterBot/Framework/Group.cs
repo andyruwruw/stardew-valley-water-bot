@@ -53,7 +53,7 @@ namespace WaterBot.Framework
         /// <summary>
         /// Finds the tile closes to the centroid of all the points.
         /// </summary>
-        public Point Centroid()
+        public Point Centroid(Map map)
         {
             int sumOfX = 0;
             int sumOfY = 0;
@@ -68,6 +68,8 @@ namespace WaterBot.Framework
 
             int shortest = int.MaxValue;
             Tile centerWalkableTile = null;
+            int shortestNonWalkable = int.MaxValue;
+            Tile centerNonWalkableTile = null;
 
             foreach (Tile tile in this.list)
             {
@@ -75,7 +77,16 @@ namespace WaterBot.Framework
                 {
                     shortest = tile.distanceTo(centroid);
                     centerWalkableTile = tile;
+                }else if (tile.block && tile.distanceTo(centroid) < shortestNonWalkable)
+                {
+                    shortestNonWalkable = tile.distanceTo(centroid);
+                    centerNonWalkableTile = tile;
                 }
+            }
+
+            if (centerWalkableTile == null)
+            {
+                return map.findClosestWalkableTile(centerNonWalkableTile).getPoint();
             }
 
             return centerWalkableTile.getPoint();

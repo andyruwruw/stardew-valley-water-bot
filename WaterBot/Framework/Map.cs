@@ -65,7 +65,7 @@ namespace WaterBot.Framework
         /// <param name="y">Y of tile.</param>
         public static bool tileIsPassable(int x, int y)
         {
-            return Game1.getFarm().isCollidingPosition(new Rectangle(y * 64 + 1, x * 64 + 1, 62, 62), Game1.viewport, isFarmer: true, -1, glider: false, Game1.player);
+            return Game1.currentLocation.isCollidingPosition(new Rectangle(y * 64 + 1, x * 64 + 1, 62, 62), Game1.viewport, isFarmer: true, -1, glider: false, Game1.player);
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace WaterBot.Framework
         /// <param name="y">Y of tile.</param>
         public static bool tileIsRefillable(int x, int y)
         {
-            return Game1.getFarm().CanRefillWateringCanOnTile(y, x);
+            return Game1.currentLocation.CanRefillWateringCanOnTile(y, x);
         }
 
         /// <summary>
@@ -89,14 +89,14 @@ namespace WaterBot.Framework
         {
             Vector2 index = new Vector2(x, y);
 
-            return (Game1.getFarm().isTileHoeDirt(index) &&
-                ((Game1.getFarm().terrainFeatures[index] as HoeDirt).state.Value == 0) &&
-                ((Game1.getFarm().terrainFeatures[index] as HoeDirt).crop != null) &&
-                (!(Game1.getFarm().terrainFeatures[index] as HoeDirt).crop.dead) &&
-                ((((Game1.getFarm().terrainFeatures[index] as HoeDirt).crop.fullyGrown &&
-                (Game1.getFarm().terrainFeatures[index] as HoeDirt).crop.dayOfCurrentPhase > 0) ||
-                ((Game1.getFarm().terrainFeatures[index] as HoeDirt).crop.currentPhase < (Game1.getFarm().terrainFeatures[index] as HoeDirt).crop.phaseDays.Count - 1)) ||
-                (Game1.getFarm().terrainFeatures[index] as HoeDirt).crop.regrowAfterHarvest != -1));
+            return (Game1.currentLocation.isTileHoeDirt(index) &&
+                ((Game1.currentLocation.terrainFeatures[index] as HoeDirt).state.Value == 0) &&
+                ((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop != null) &&
+                (!(Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.dead) &&
+                ((((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.fullyGrown &&
+                (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.dayOfCurrentPhase > 0) ||
+                ((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.currentPhase < (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.phaseDays.Count - 1)) ||
+                (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.regrowAfterHarvest != -1));
         }
 
         /// <summary>
@@ -106,8 +106,8 @@ namespace WaterBot.Framework
         /// <param name="location">Farm location instance.</param>
         public void loadMap()
         {
-            this.height = Game1.getFarm().map.Layers[0].LayerHeight;
-            this.width = Game1.getFarm().map.Layers[0].LayerWidth;
+            this.height = Game1.currentLocation.map.Layers[0].LayerHeight;
+            this.width = Game1.currentLocation.map.Layers[0].LayerWidth;
 
             List<List<Tile>> map = new List<List<Tile>>();
             List<Tile> waterableTiles = new List<Tile>();
@@ -295,97 +295,50 @@ namespace WaterBot.Framework
             }
         }
 
-        /// <summary>
-        /// Uses A* to find cost between different groupings.
-        /// </summary>
-        /// 
-        /// <param name="console">Function for printing to debug console.</param>
-        public int[,] generateCostMatrix(console console)
+        public Tile findClosestWalkableTile(Tile center)
         {
-            foreach (Group group in this.groupings)
+            foreach (List<Tile> row in this.map)
             {
-                if (group.Count() == 0)
+                foreach (Tile tile in row)
                 {
-                    this.groupings.Remove(group);
+                    tile.walkableCheck = false;
                 }
             }
 
-            int nodes = this.groupings.Count + 1;
+            List<Tile> queue = new List<Tile>();
+            queue.Add(center);
 
-            int[,] costMatrix = new int[nodes, nodes];
-
-            // From
-            for (int i = 0; i < nodes; i++)
+            while (queue.Count > 0)
             {
-                // To
-                for (int j = 0; j < nodes; j++)
+                Tile current = queue[0];
+                queue.RemoveAt(0);
+
+                if (current.walkableCheck)
                 {
-                    if (i == j)
+                    continue;
+                }
+
+                current.walkableCheck = true;
+
+                if (!current.block)
+                {
+                    return current;
+                } else
+                {
+                    foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions.Concat(this.diagonals))
                     {
-                        costMatrix[i, j] = -1;
-                    }
-                    else
-                    {
-                        if (costMatrix[j, i] > 0)
+                        if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
                         {
-                            costMatrix[i, j] = costMatrix[j, i];
-                        }
-                        else if (j == 0 || i == 0)
-                        {
-                            Point start = new Point(Game1.player.getTileX(), Game1.player.getTileY());
-                            Point end = this.groupings[i == 0 ? j - 1 : i - 1].Centroid();
-
-                            Tuple<List<Tile>, int> path = this.walkablePathBetweenPoints(console, start, end);
-
-                            costMatrix[i, j] = path.Item2;
-                        }
-                        else
-                        {
-                            Point start = this.groupings[i - 1].Centroid();
-                            Point end = this.groupings[j - 1].Centroid();
-
-                            Tuple<List<Tile>, int> path = this.walkablePathBetweenPoints(console, start, end);
-
-                            costMatrix[i, j] = path.Item2;
+                            if (!this.map[current.y + direction.Item1][current.x + direction.Item2].walkableCheck)
+                            {
+                                queue.Add(this.map[current.y + direction.Item1][current.x + direction.Item2]);
+                            }
                         }
                     }
                 }
             }
 
-            List<int> safeGroups = new List<int>();
-            List<int> deleteGroups = new List<int>();
-
-            for (int i = 0; i < nodes; i++)
-            {
-                if (costMatrix[0, i] == int.MaxValue)
-                {
-                    deleteGroups.Add(i);
-                }
-                else
-                {
-                    safeGroups.Add(i);
-                }
-            }
-
-            deleteGroups.Sort();
-
-            for (int i = deleteGroups.Count - 1; i >= 0; i--)
-            {
-                this.groupings.RemoveAt(deleteGroups[i] - 1);
-            }
-
-            int[,] reachableCostMatrix = new int[safeGroups.Count, safeGroups.Count];
-
-            for (int i = 0; i < safeGroups.Count; i++)
-            {
-                for (int j = 0; j < safeGroups.Count; j++)
-                {
-                    reachableCostMatrix[i, j] = costMatrix[safeGroups[i], safeGroups[j]];
-                    reachableCostMatrix[j, i] = costMatrix[safeGroups[j], safeGroups[i]];
-                }
-            }
-
-            return reachableCostMatrix;
+            return null;
         }
 
         /// <summary>
@@ -472,12 +425,110 @@ namespace WaterBot.Framework
         }
 
         /// <summary>
+        /// Uses A* to find cost between different groupings.
+        /// </summary>
+        /// 
+        /// <param name="console">Function for printing to debug console.</param>
+        public int[,] generateCostMatrix(console console)
+        {
+            foreach (Group group in this.groupings)
+            {
+                if (group.Count() == 0)
+                {
+                    this.groupings.Remove(group);
+                }
+            }
+
+            int nodes = this.groupings.Count + 1;
+
+            int[,] costMatrix = new int[nodes, nodes];
+
+            // From
+            for (int i = 0; i < nodes; i++)
+            {
+                // To
+                for (int j = 0; j < nodes; j++)
+                {
+                    if (i == j)
+                    {
+                        costMatrix[i, j] = -1;
+                    }
+                    else
+                    {
+                        if (costMatrix[j, i] > 0)
+                        {
+                            costMatrix[i, j] = costMatrix[j, i];
+                        }
+                        else if (j == 0 || i == 0)
+                        {
+                            Point start = new Point(Game1.player.getTileX(), Game1.player.getTileY());
+                            Point end = this.groupings[i == 0 ? j - 1 : i - 1].Centroid(this);
+
+                            Tuple<List<Tile>, int> path = this.walkablePathBetweenPoints(console, start, end);
+
+                            costMatrix[i, j] = path.Item2;
+                        }
+                        else
+                        {
+                            Point start = this.groupings[i - 1].Centroid(this);
+                            Point end = this.groupings[j - 1].Centroid(this);
+
+                            Tuple<List<Tile>, int> path = this.walkablePathBetweenPoints(console, start, end);
+
+                            costMatrix[i, j] = path.Item2;
+                        }
+                    }
+                }
+            }
+
+            List<int> safeGroups = new List<int>();
+            List<int> deleteGroups = new List<int>();
+
+            for (int i = 0; i < nodes; i++)
+            {
+                if (costMatrix[0, i] == int.MaxValue)
+                {
+                    deleteGroups.Add(i);
+                }
+                else
+                {
+                    safeGroups.Add(i);
+                }
+            }
+
+            deleteGroups.Sort();
+
+            for (int i = deleteGroups.Count - 1; i >= 0; i--)
+            {
+                this.groupings.RemoveAt(deleteGroups[i] - 1);
+            }
+
+            int[,] reachableCostMatrix = new int[safeGroups.Count, safeGroups.Count];
+
+            for (int i = 0; i < safeGroups.Count; i++)
+            {
+                for (int j = 0; j < safeGroups.Count; j++)
+                {
+                    reachableCostMatrix[i, j] = costMatrix[safeGroups[i], safeGroups[j]];
+                    reachableCostMatrix[j, i] = costMatrix[safeGroups[j], safeGroups[i]];
+                }
+            }
+
+            return reachableCostMatrix;
+        }  
+
+        /// <summary>
         /// Runs TSP Greedy to find best path through all groups
         /// </summary>
         /// 
         /// <param name="console">Function for printing to debug console.</param>
         public List<Group> findGroupPath(console console)
         {
+            if (this.groupings.Count == 1)
+            {
+                return this.groupings;
+            }
+
             List<Group> path = new List<Group>();
 
             int[,] costMatrix = this.generateCostMatrix(console);

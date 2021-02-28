@@ -12,7 +12,9 @@ When you **right-click** a not fully grown plant with your **Watering Can**, the
 
 **Press any button** at any point to stop the bot. The bot will automatically stop if you have low stamina.
 
-<img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/find_groups.gif">
+<p align="center">
+  <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/implementation/find_groups.gif">
+</p>
 
 # Contents
 

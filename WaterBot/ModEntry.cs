@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -44,11 +43,13 @@ namespace WaterBot
 
             if (this.bot.active)
             {
+                this.console("Player provided interrupt signal. Process stopped.");
                 this.bot.stop();
             } else if (e.Button == SButton.MouseRight)
             {
                 if (this.isWateringHoedDirt())
                 {
+                    this.console("Player provided trigger to begin bot.");
                     this.bot.start(this.console);
                 }
             }
@@ -76,7 +77,12 @@ namespace WaterBot
                     Vector2 rounded = new Vector2((float)Math.Round(tileLocation.X), (float)Math.Round(tileLocation.Y));
 
                     // If they just watered Hoe Dirt, return true
-                    if (Game1.currentLocation.terrainFeatures.ContainsKey(rounded) && Game1.currentLocation.terrainFeatures[rounded] is HoeDirt && (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop != null)
+                    if (Game1.currentLocation.terrainFeatures.ContainsKey(rounded) &&
+                        Game1.currentLocation.terrainFeatures[rounded] is HoeDirt &&
+                        (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop != null &&
+                        (((Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.fullyGrown &&
+                        (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.dayOfCurrentPhase > 0) ||
+                        ((Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.currentPhase < (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.phaseDays.Count - 1)))
                     {
                         return true;
                     }

@@ -3,9 +3,6 @@ using StardewValley;
 using StardewValley.Tools;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace WaterBot.Framework
@@ -70,6 +67,13 @@ namespace WaterBot.Framework
 
             if (!this.active) return;
 
+            if (((WateringCan)Game1.player.CurrentTool).WaterLeft <= 0)
+            {
+                this.refillWater();
+
+                return;
+            }
+
             Game1.player.controller = new PathFindController(Game1.player, Game1.getFarm(), this.order[this.currentTile].getStand(), 2, this.startWatering);
         }
 
@@ -105,7 +109,8 @@ namespace WaterBot.Framework
                 this.water(point);
 
                 Task.Delay(new TimeSpan(0, 0, 0, 0, 800)).ContinueWith(o => { this.startWatering(c, location); });
-            } else
+            }
+            else
             {
                 this.navigate();
             }
@@ -125,13 +130,15 @@ namespace WaterBot.Framework
             else if (Game1.player.getTileY() < tile.Y)
             {
                 Game1.player.FacingDirection = 2;
-            } else if (Game1.player.getTileX() > tile.X)
+            }
+            else if (Game1.player.getTileX() > tile.X)
             {
                 Game1.player.FacingDirection = 3;
-            } else if (Game1.player.getTileX() < tile.X)
+            }
+            else if (Game1.player.getTileX() < tile.X)
             {
                 Game1.player.FacingDirection = 1;
-            } 
+            }
 
             if (Game1.player.isEmoteAnimating)
             {
@@ -146,62 +153,36 @@ namespace WaterBot.Framework
             Game1.player.Halt();
             Game1.player.CurrentTool.Update(Game1.player.FacingDirection, 0, Game1.player);
 
-            if ((int)Game1.player.CurrentTool.upgradeLevel <= 0)
+            Game1.player.stopJittering();
+            Game1.player.canReleaseTool = false;
+
+            int addedAnimationMultiplayer = ((!(Game1.player.Stamina <= 0f)) ? 1 : 2);
+            if (Game1.isAnyGamePadButtonBeingPressed() || !Game1.player.IsLocalPlayer)
             {
-                Game1.player.stopJittering();
-                Game1.player.canReleaseTool = false;
-
-                int addedAnimationMultiplayer = ((!(Game1.player.Stamina <= 0f)) ? 1 : 2);
-                if (Game1.isAnyGamePadButtonBeingPressed() || !Game1.player.IsLocalPlayer)
-                {
-                    Game1.player.lastClick = Game1.player.GetToolLocation();
-                }
-
-                if (((WateringCan)Game1.player.CurrentTool).WaterLeft > 0 && Game1.player.ShouldHandleAnimationSound())
-                {
-                    Game1.player.currentLocation.localSound("wateringCan");
-                }
-
-                Game1.player.lastClick = new Vector2(tile.X * Game1.tileSize, tile.Y * Game1.tileSize);
-
-                switch (Game1.player.FacingDirection)
-                {
-                    case 2:
-                        ((FarmerSprite)Game1.player.Sprite).animateOnce(164, 125f * (float)addedAnimationMultiplayer, 3);
-                        break;
-                    case 1:
-                        ((FarmerSprite)Game1.player.Sprite).animateOnce(172, 125f * (float)addedAnimationMultiplayer, 3);
-                        break;
-                    case 0:
-                        ((FarmerSprite)Game1.player.Sprite).animateOnce(180, 125f * (float)addedAnimationMultiplayer, 3);
-                        break;
-                    case 3:
-                        ((FarmerSprite)Game1.player.Sprite).animateOnce(188, 125f * (float)addedAnimationMultiplayer, 3);
-                        break;
-                }
+                Game1.player.lastClick = Game1.player.GetToolLocation();
             }
-            else
+
+            if (((WateringCan)Game1.player.CurrentTool).WaterLeft > 0 && Game1.player.ShouldHandleAnimationSound())
             {
-                Game1.player.jitterStrength = 0.25f;
-                switch (Game1.player.FacingDirection)
-                {
-                    case 0:
-                        Game1.player.FarmerSprite.setCurrentFrame(180);
-                        Game1.player.CurrentTool.Update(0, 0, Game1.player);
-                        break;
-                    case 1:
-                        Game1.player.FarmerSprite.setCurrentFrame(172);
-                        Game1.player.CurrentTool.Update(1, 0, Game1.player);
-                        break;
-                    case 2:
-                        Game1.player.FarmerSprite.setCurrentFrame(164);
-                        Game1.player.CurrentTool.Update(2, 0, Game1.player);
-                        break;
-                    case 3:
-                        Game1.player.FarmerSprite.setCurrentFrame(188);
-                        Game1.player.CurrentTool.Update(3, 0, Game1.player);
-                        break;
-                }
+                Game1.player.currentLocation.localSound("wateringCan");
+            }
+
+            Game1.player.lastClick = new Vector2(tile.X * Game1.tileSize, tile.Y * Game1.tileSize);
+
+            switch (Game1.player.FacingDirection)
+            {
+                case 2:
+                    ((FarmerSprite)Game1.player.Sprite).animateOnce(164, 125f * (float)addedAnimationMultiplayer, 3);
+                    break;
+                case 1:
+                    ((FarmerSprite)Game1.player.Sprite).animateOnce(172, 125f * (float)addedAnimationMultiplayer, 3);
+                    break;
+                case 0:
+                    ((FarmerSprite)Game1.player.Sprite).animateOnce(180, 125f * (float)addedAnimationMultiplayer, 3);
+                    break;
+                case 3:
+                    ((FarmerSprite)Game1.player.Sprite).animateOnce(188, 125f * (float)addedAnimationMultiplayer, 3);
+                    break;
             }
 
             this.map.map[tile.Y][tile.X].waterable = false;
@@ -248,7 +229,14 @@ namespace WaterBot.Framework
 
             if (!this.active) return;
 
-            Game1.player.controller = new PathFindController(Game1.player, Game1.getFarm(), refillStation.getStand(), 2, this.startRefilling);
+            if (this.refillStation != null)
+            {
+                Game1.player.controller = new PathFindController(Game1.player, Game1.getFarm(), refillStation.getStand(), 2, this.startRefilling);
+            }
+            else
+            {
+                this.noWater();
+            }
         }
 
         public void startRefilling(Character c, GameLocation location)
@@ -288,6 +276,7 @@ namespace WaterBot.Framework
         /// </summary>
         public void exhausted()
         {
+            this.console("Bot interrupted by lack of stamina. Ending process.");
             this.active = false;
             Game1.player.controller = null;
             this.displayMessage("Tired of watering", 3);
@@ -296,8 +285,20 @@ namespace WaterBot.Framework
         /// <summary>
         /// Cancels the bot's progress.
         /// </summary>
+        public void noWater()
+        {
+            this.console("Bot could not find suitable refill tile. Ending process.");
+            this.active = false;
+            Game1.player.controller = null;
+            this.displayMessage("Could not find water!", 3);
+        }
+
+        /// <summary>
+        /// Cancels the bot's progress.
+        /// </summary>
         public void end()
         {
+            this.console("Bot finished watering accessable crops. Ending process.");
             this.active = false;
             Game1.player.controller = null;
             this.displayMessage("Finished watering", 1);

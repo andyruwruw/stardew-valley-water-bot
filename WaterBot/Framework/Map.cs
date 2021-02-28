@@ -4,7 +4,6 @@ using StardewValley.TerrainFeatures;
 using System.Collections.Generic;
 using System;
 using System.Linq;
-using System.Threading;
 
 namespace WaterBot.Framework
 {
@@ -29,7 +28,8 @@ namespace WaterBot.Framework
 
         private Tuple<int, int, Func<int, int, bool>>[] diagonals;
 
-        public Map() {
+        public Map()
+        {
             this.directions = new Tuple<int, int, Func<int, int, bool>>[] {
                 new Tuple<int, int, Func<int, int, bool>>(1, 0, (int y, int x) => y < this.height),
                 new Tuple<int, int, Func<int, int, bool>>(-1, 0, (int y, int x) => y >= 0),
@@ -89,11 +89,14 @@ namespace WaterBot.Framework
         {
             Vector2 index = new Vector2(x, y);
 
-            if (Game1.getFarm().isTileHoeDirt(index) && ((Game1.getFarm().terrainFeatures[index] as HoeDirt).state.Value) == 0 && ((Game1.getFarm().terrainFeatures[index] as HoeDirt).crop != null))
-            {
-                return true;
-            }
-            return false;
+            return (Game1.getFarm().isTileHoeDirt(index) &&
+                ((Game1.getFarm().terrainFeatures[index] as HoeDirt).state.Value == 0) &&
+                ((Game1.getFarm().terrainFeatures[index] as HoeDirt).crop != null) &&
+                (!(Game1.getFarm().terrainFeatures[index] as HoeDirt).crop.dead) &&
+                ((((Game1.getFarm().terrainFeatures[index] as HoeDirt).crop.fullyGrown &&
+                (Game1.getFarm().terrainFeatures[index] as HoeDirt).crop.dayOfCurrentPhase > 0) ||
+                ((Game1.getFarm().terrainFeatures[index] as HoeDirt).crop.currentPhase < (Game1.getFarm().terrainFeatures[index] as HoeDirt).crop.phaseDays.Count - 1)) ||
+                (Game1.getFarm().terrainFeatures[index] as HoeDirt).crop.regrowAfterHarvest != -1));
         }
 
         /// <summary>
@@ -299,7 +302,16 @@ namespace WaterBot.Framework
         /// <param name="console">Function for printing to debug console.</param>
         public int[,] generateCostMatrix(console console)
         {
+            foreach (Group group in this.groupings)
+            {
+                if (group.Count() == 0)
+                {
+                    this.groupings.Remove(group);
+                }
+            }
+
             int nodes = this.groupings.Count + 1;
+
             int[,] costMatrix = new int[nodes, nodes];
 
             // From
@@ -311,7 +323,8 @@ namespace WaterBot.Framework
                     if (i == j)
                     {
                         costMatrix[i, j] = -1;
-                    } else
+                    }
+                    else
                     {
                         if (costMatrix[j, i] > 0)
                         {
@@ -347,7 +360,8 @@ namespace WaterBot.Framework
                 if (costMatrix[0, i] == int.MaxValue)
                 {
                     deleteGroups.Add(i);
-                } else
+                }
+                else
                 {
                     safeGroups.Add(i);
                 }
@@ -479,11 +493,8 @@ namespace WaterBot.Framework
             visitedRouteList.Add(0);
             int[] route = new int[costMatrix.Length];
 
-            int ranTimes = 0;
-
             while (i < costMatrix.GetLength(0) && j < costMatrix.GetLength(1))
             {
-                ranTimes += 1;
                 if (counter >= costMatrix.GetLength(0) - 1)
                 {
                     break;
@@ -640,7 +651,8 @@ namespace WaterBot.Framework
                         {
                             actionable.pushExecuteOn(current.getPoint());
                             current.watered = true;
-                        } else if (this.map[actionable.getStand().Y][actionable.getStand().X].waterable && !this.map[actionable.getStand().Y][actionable.getStand().X].watered)
+                        }
+                        else if (this.map[actionable.getStand().Y][actionable.getStand().X].waterable && !this.map[actionable.getStand().Y][actionable.getStand().X].watered)
                         {
                             actionable.pushExecuteOn(actionable.getStand());
                             this.map[actionable.getStand().Y][actionable.getStand().X].watered = true;
@@ -709,16 +721,16 @@ namespace WaterBot.Framework
                 }
             }
 
-            List<Tile> queue = new List<Tile>();
-            queue.Add(start);
+            List<Tuple<Tile, Tile>> queue = new List<Tuple<Tile, Tile>>(); // Current, Last
+            queue.Add(new Tuple<Tile, Tile>(start, null));
 
             Tile current = null;
             Tile last = null;
 
             while (queue.Count > 0)
             {
-                last = current;
-                current = queue[0];
+                last = queue[0].Item2;
+                current = queue[0].Item1;
                 queue.RemoveAt(0);
 
                 if (current.waterCheck)
@@ -743,7 +755,7 @@ namespace WaterBot.Framework
                     }
                 }
 
-                if (current.block)
+                if (current.block && current != start)
                 {
                     continue;
                 }
@@ -752,7 +764,10 @@ namespace WaterBot.Framework
                 {
                     if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
                     {
-                        queue.Add(this.map[current.y + direction.Item1][current.x + direction.Item2]);
+                        if (!this.map[current.y + direction.Item1][current.x + direction.Item2].block || this.map[current.y + direction.Item1][current.x + direction.Item2].water)
+                        {
+                            queue.Add(new Tuple<Tile, Tile>(this.map[current.y + direction.Item1][current.x + direction.Item2], current));
+                        }
                     }
                 }
             }

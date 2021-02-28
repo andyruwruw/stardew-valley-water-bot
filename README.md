@@ -8,16 +8,22 @@
 
 Unlike other mods, watering your crops will still cost you the same amount of time and energy as if you had done it yourself, just a little less tedious.
 
-When you **right-click** a plant with your **Watering Can**, the bot will take control of your character, **watering all your crops** and **refilling the water** can at the nearest water source whenever necessary.
+When you **right-click** a not fully grown plant with your **Watering Can**, the bot will take control of your character, **watering all your crops** and **refilling the water** can at the nearest water source whenever necessary.
 
 **Left-click** at any point to stop the bot. The bot will automatically stop if you have low stamina.
 
 # Contents
 
-- [Install]()
-- [Configure]()
-- [Compatibility]()
-- [Implementation]()
+- [Install](#install)
+- [How to Use](#how-to-use)
+- [Implementation](#implementation)
+  1. [Trigger](#1-trigger)
+  2. [Loading the Player's Farm](##2-loading-the-players-farm)
+  3. [Find Grouped Crops](#3-find-grouped-crops)
+  4. [Cost of Traveling Between Groups](#4-cost-of-traveling-between-groups)
+  5. [The Traveling Water Man](#5-the-traveling-water-man)
+  6. [Watering the Group](#6-watering-the-group)
+  7. [Out of Water!](#7-out-of-water)
 
 # Install
 
@@ -25,6 +31,22 @@ When you **right-click** a plant with your **Watering Can**, the bot will take c
 2. Download this mod and unzip the contents.
 3. Place the mod in your Mods folder.
 4. Run the game using SMAPI.
+
+# How to Use
+
+Good morning!
+
+Time to water your crops.
+
+Pull out your **Watering Can**, and **left-click** on any of your beautiful crops as if you were watering them.
+
+By a miracle of love for your budding crops, you're carried away into watering the rest of them without pushing so much as a button.
+
+You automatically get more water to refill your watering can from instinct, still in a lucid state.
+
+Snap out of it early by pressing any button.
+
+Don't worry, you won't knock yourself out from watering, you will stop before you run out of stamina
 
 # Implementation
 

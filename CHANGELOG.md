@@ -1,3 +1,18 @@
+# v1.1.1
+
+🚀 New Feature
+
+- Bot now works on any location (Greenhouse included).
+- Any action button set in options now works, not just right-click.
+
+🐛 Bug Fix
+
+- Fixed bug where groups of only unwalkable crops broke the bot.
+
+💅 Polish
+
+- If all crops are grouped, skips TSP algorithm.
+
 # v1.1.0
 
 🚀 New Feature

@@ -1,3 +1,21 @@
+ <p align="center">
+  <img src="https://raw.githubusercontent.com/andyruwruw/stardew-valley-water-bot/main/documentation/cover-image.gif">
+ </p>
+ 
+ <p align="center">
+  <a href="https://www.nexusmods.com/stardewvalley/mods/8167">Download on Nexus</a>
+  ·
+  <a href="https://github.com/andyruwruw/stardew-valley-water-bot/issues/new/choose">Submit an Issue</a>
+  ·
+  <a href="https://www.youtube.com/watch?v=_8lDC51DbRs&feature=youtu.be">Youtube Video</a>
+</p>
+ 
+ <p align="center">
+  For my fellow lazy farmers without sprinklers
+ </p>
+
+# WaterBot
+
 **WaterBot** is a [Stardew Valley](https://www.stardewvalley.net/) mod that helps you water your crops while staying as vanilla as possible.
 
 Unlike other mods, watering your crops will still cost you the same amount of time and energy as if you had done it yourself, just a little less tedious.

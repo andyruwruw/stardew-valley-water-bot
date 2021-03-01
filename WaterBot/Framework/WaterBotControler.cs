@@ -48,8 +48,6 @@ namespace WaterBot.Framework
             this.console = console;
             this.active = true;
 
-            this.displayMessage(this.helper.Translation.Get("process.start"), 2);
-
             // Load map data
             this.map.loadMap();
 
@@ -64,6 +62,14 @@ namespace WaterBot.Framework
             this.currentTile = 0;
 
             this.path = this.map.findGroupPath(this.console);
+
+            if (path.Count == 0)
+            {
+                this.active = false;
+                return;
+            }
+
+            this.displayMessage(this.helper.Translation.Get("process.start"), 2);
 
             if (!this.active) return;
 

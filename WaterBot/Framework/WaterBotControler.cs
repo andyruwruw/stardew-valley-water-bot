@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Tools;
 using System;
@@ -12,6 +13,8 @@ namespace WaterBot.Framework
     /// </summary>
     class WaterBotControler
     {
+        private IModHelper helper;
+
         public bool active;
 
         public Map map;
@@ -28,8 +31,9 @@ namespace WaterBot.Framework
 
         public console console;
 
-        public WaterBotControler()
+        public WaterBotControler(IModHelper helper)
         {
+            this.helper = helper;
             this.active = false;
             this.map = new Map();
         }
@@ -44,7 +48,7 @@ namespace WaterBot.Framework
             this.console = console;
             this.active = true;
 
-            this.displayMessage("Time to Start Watering!", 2);
+            this.displayMessage(this.helper.Translation.Get("process.start"), 2);
 
             // Load map data
             this.map.loadMap();
@@ -268,7 +272,7 @@ namespace WaterBot.Framework
         {
             this.active = false;
             Game1.player.controller = null;
-            this.displayMessage("Stopped Watering", 1);
+            this.displayMessage(this.helper.Translation.Get("process.interrupt"), 1);
         }
 
         /// <summary>
@@ -279,7 +283,7 @@ namespace WaterBot.Framework
             this.console("Bot interrupted by lack of stamina. Ending process.");
             this.active = false;
             Game1.player.controller = null;
-            this.displayMessage("Tired of Watering", 3);
+            this.displayMessage(this.helper.Translation.Get("process.exhausted"), 3);
         }
 
         /// <summary>
@@ -290,7 +294,7 @@ namespace WaterBot.Framework
             this.console("Bot could not find suitable refill tile. Ending process.");
             this.active = false;
             Game1.player.controller = null;
-            this.displayMessage("Could not find water!", 3);
+            this.displayMessage(this.helper.Translation.Get("process.waterless"), 3);
         }
 
         /// <summary>
@@ -301,7 +305,7 @@ namespace WaterBot.Framework
             this.console("Bot finished watering accessable crops. Ending process.");
             this.active = false;
             Game1.player.controller = null;
-            this.displayMessage("Finished Watering", 1);
+            this.displayMessage(this.helper.Translation.Get("process.end"), 1);
         }
 
         /// <summary>

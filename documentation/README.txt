@@ -1,4 +1,4 @@
-WATERBOT v1.1.1
+WATERBOT v1.2.0
 -------------------------
 C:\Users\player\'Program Files (x86)'\Steam\steamapps\common\StardewValley\Mods\WaterBot
 $ run WaterBot.exe

@@ -524,76 +524,73 @@ namespace WaterBot.Framework
         /// <param name="console">Function for printing to debug console.</param>
         public List<Group> findGroupPath(console console)
         {
-            if (this.groupings.Count == 1)
+            try
             {
-                return this.groupings;
-            }
-
-            List<Group> path = new List<Group>();
-
-            int[,] costMatrix = this.generateCostMatrix(console);
-
-            int sum = 0;
-            int counter = 0;
-            int j = 0;
-            int i = 0;
-            int min = int.MaxValue;
-
-            List<int> visitedRouteList = new List<int>();
-
-            visitedRouteList.Add(0);
-            int[] route = new int[costMatrix.Length];
-
-            while (i < costMatrix.GetLength(0) && j < costMatrix.GetLength(1))
-            {
-                if (counter >= costMatrix.GetLength(0) - 1)
+                if (this.groupings.Count == 1)
                 {
-                    break;
+                    return this.groupings;
                 }
 
-                if (j != i && !(visitedRouteList.Contains(j)))
+                List<Group> path = new List<Group>();
+
+                int[,] costMatrix = this.generateCostMatrix(console);
+
+                int counter = 0;
+                int j = 0;
+                int i = 0;
+                int min = int.MaxValue;
+
+                List<int> visitedRouteList = new List<int>();
+
+                visitedRouteList.Add(0);
+                int[] route = new int[costMatrix.Length];
+
+                while (i < costMatrix.GetLength(0) && j < costMatrix.GetLength(1))
                 {
-                    if (costMatrix[i, j] < min)
+                    if (counter >= costMatrix.GetLength(0) - 1)
                     {
-                        min = costMatrix[i, j];
-                        route[counter] = j + 1;
+                        break;
+                    }
+
+                    if (j != i && !(visitedRouteList.Contains(j)))
+                    {
+                        if (costMatrix[i, j] < min)
+                        {
+                            min = costMatrix[i, j];
+                            route[counter] = j + 1;
+                        }
+                    }
+                    j++;
+
+                    if (j == costMatrix.GetLength(0))
+                    {
+                        min = int.MaxValue;
+                        visitedRouteList.Add(route[counter] - 1);
+
+                        j = 0;
+                        i = route[counter] - 1;
+                        counter++;
                     }
                 }
-                j++;
 
-                if (j == costMatrix.GetLength(0))
+                foreach (int index in visitedRouteList)
                 {
-                    sum += min;
-                    min = int.MaxValue;
-                    visitedRouteList.Add(route[counter] - 1);
-
-                    j = 0;
-                    i = route[counter] - 1;
-                    counter++;
+                    if (index != 0)
+                    {
+                        path.Add(this.groupings[index - 1]);
+                    }
                 }
-            }
 
-            i = route[counter - 1] - 1;
-
-            for (j = 0; j < costMatrix.GetLength(0); j++)
+                return path;
+            } catch (IndexOutOfRangeException e)
             {
-                if ((i != j) && costMatrix[i, j] < min)
-                {
-                    min = costMatrix[i, j];
-                    route[counter] = j + 1;
-                }
-            }
-            sum += min;
-
-            foreach (int index in visitedRouteList)
+                console("WaterBot encountered an error and will return a sub-optimal path.");
+                return this.groupings;
+            } catch (Exception e)
             {
-                if (index != 0)
-                {
-                    path.Add(this.groupings[index - 1]);
-                }
+                console("WaterBot encountered an unknown error and will return a sub-optimal path.");
+                return this.groupings;
             }
-
-            return path;
         }
 
         /// <summary>

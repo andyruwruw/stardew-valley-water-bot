@@ -1,7 +1,7 @@
 {
   "Name": "WaterBot",
   "Author": "andyruwruw",
-  "Version": "1.1.1",
+  "Version": "1.2.0",
   "Description": "Water all your plants by clicking a button and sitting back.",
   "UniqueID": "andyruwruw.WaterBot",
   "EntryDll": "WaterBot.dll",

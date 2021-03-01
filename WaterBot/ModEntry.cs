@@ -24,7 +24,7 @@ namespace WaterBot
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
         public override void Entry(IModHelper helper)
         {
-            this.bot = new WaterBotControler();
+            this.bot = new WaterBotControler(helper);
 
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
         }

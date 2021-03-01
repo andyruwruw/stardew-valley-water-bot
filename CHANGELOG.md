@@ -1,3 +1,9 @@
+# v1.2.0
+
+🚀 New Feature
+
+- Translations for different languages added.
+
 # v1.1.1
 
 🚀 New Feature

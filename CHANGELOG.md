@@ -1,3 +1,9 @@
+# v1.2.1
+
+🐛 Bug Fix
+
+- Fixed bug when trying to water after all crops are already watered.
+
 # v1.2.0
 
 🚀 New Feature

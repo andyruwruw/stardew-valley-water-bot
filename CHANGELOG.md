@@ -4,6 +4,10 @@
 
 - Translations for different languages added.
 
+🐛 Bug Fix
+
+- Fixed bug when calculating best path through groups
+
 # v1.1.1
 
 🚀 New Feature

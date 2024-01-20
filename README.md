@@ -24,10 +24,13 @@ When you **right-click** a not fully grown plant with your **Watering Can**, the
 
 **Press any button** at any point to stop the bot. The bot will automatically stop if you have low stamina.
 
+All buttons are customizable in the config. More details in the [Configure the Bot](#configure-the-bot) section.
+
 # Contents
 
 - [Install](#install)
 - [How to Use](#how-to-use)
+- [Configure the Bot](#configure-the-bot)
 - [Implementation](#implementation)
   1. [Trigger](#1-trigger)
   2. [Loading the Player's Farm](##2-loading-the-players-farm)
@@ -50,7 +53,7 @@ Good morning!
 
 Time to water your crops.
 
-Pull out your **Watering Can**, and **left-click** on any of your beautiful crops as if you were watering them.
+Pull out your **Watering Can**, and **right-click** on any of your beautiful crops as if you were watering them.
 
 By a miracle of love for your budding crops, you're carried away into watering the rest of them without pushing so much as a button.
 
@@ -58,7 +61,27 @@ You automatically get more water to refill your watering can from instinct, stil
 
 Snap out of it early by pressing any button.
 
-Don't worry, you won't knock yourself out from watering, you will stop before you run out of stamina
+Don't worry, you won't knock yourself out from watering, you will stop before you run out of stamina.
+
+The config allows you to change a lot of different parameters.
+
+# Configure the Bot
+
+In your mod folder, a `config.json` file should generate automatically after you run the game. Change these settings for your desired experience!
+
+| Config Key                           | Description                                                         | Type    | Default  | Example |
+|--------------------------------------|---------------------------------------------------------------------|---------|----------|---------|
+| `WateringConsumesEnergy`             | Determines if watering will consume energy like usual.              | Boolean | `true`   | `false` |
+| `WateringEmptiesWateringCan`         | Turn on for a bottomless watering can during watering.              | Boolean | `false`  | `true`  |
+| `WateringHappensInstantly`           | Skip all that pesky watering and just make my plants wet.           | Boolean | `false`  | `true`  |
+| `UseUpgradedWateringCans`            | Use upgraded watering can's functionality to water.                 | Boolean | `true`   | `false` |
+| `StopBeforeExhaustion`               | Stop me before I pass out! I'd question you if you changed this.    | Boolean | `true`   | `false` |
+| `StopOnAnyKeyPress`                  | Should any key press by the user stop the bot?                      | Boolean | `true`   | `false` |
+| `OverrideStopKey`                    | If `StopOnAnyKeyPress` is `false`, what key should stop the bot?    | [Button Code](https://stardewvalleywiki.com/Modding:Player_Guide/Key_Bindings#Button_codes) | `MouseLeft`   | `RightShift` |
+| `StartOnlyIfHoldingWateringCan`      | Do you need to be holding the watering can to start the bot?        | Boolean | `true`   | `false` |
+| `StartAfterKeyPressOnWaterableTitle` | Do you need to press a button on a unwatered crop to start the bot? | Boolean | `true`   | `false` |
+| `StartOnActionKey`                   | Should you start on your devices set `Action` key press?            | Boolean | `true`   | `false` |
+| `OverrideStartKey`                   | If not the `Action` key, what key?                                  | [Button Code](https://stardewvalleywiki.com/Modding:Player_Guide/Key_Bindings#Button_codes) | `MouseRight`   | `RightShift` |
 
 # Implementation
 

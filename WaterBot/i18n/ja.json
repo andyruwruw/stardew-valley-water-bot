@@ -1,7 +1,13 @@
 {
-  "process.start": "水やりを始める時が来ました",
-  "process.end": "完成した水やり",
-  "process.interrupt": "水やりが止まった",
-  "process.exhausted": "水やりにうんざり",
-  "process.waterless": "水が見つかりませんでした"
+  "bot.name": "水ロボット",
+  "bot.description": "ボタンをクリックして座って、すべての植物に水をやります。",
+  "state.waterbot-empty-watering-can.name": "空のじょうろ",
+  "state.waterbot-empty-watering-can.inaccessible": "補充する場所が見つからない！",
+  "state.waterbot-finished-state.name": "完了したタスク",
+  "state.waterbot-finished-state.activation": "雑務完了！",
+  "state.waterbot-idle.name": "アイドル状態と待機中",
+  "state.waterbot-watering-crops.name": "作物への水やり",
+  "state.waterbot-watering-crops.activation": "作物に水をやる！",
+  "state.waterbot-watering-crops.interrupt": "家事を早めに終わらせる。",
+  "state.waterbot-watering-crops.exhausted": "疲れすぎて水やりを続けることができません。"
 }

@@ -1,7 +1,13 @@
 {
-  "process.start": "¡Es hora de empezar a regar!",
-  "process.end": "Riego terminado",
-  "process.interrupt": "Dejó de regar",
-  "process.exhausted": "Cansado de regar",
-  "process.waterless": "¡No se pudo encontrar agua!"
+  "bot.name": "AguiaRobot",
+  "bot.description": "Riega todas tus plantas haciendo clic en un botón y sentándote.",
+  "state.waterbot-empty-watering-can.name": "Regadera vacía",
+  "state.waterbot-empty-watering-can.inaccessible": "¡No puedo encontrar un lugar para recargar!",
+  "state.waterbot-finished-state.name": "Tareas terminadas",
+  "state.waterbot-finished-state.activation": "¡Tareas completadas!",
+  "state.waterbot-idle.name": "Inactivo y esperando",
+  "state.waterbot-watering-crops.name": "Regar cultivos",
+  "state.waterbot-watering-crops.activation": "¡Regando tus cultivos!",
+  "state.waterbot-watering-crops.interrupt": "Dejar de hacer las tareas del hogar temprano.",
+  "state.waterbot-watering-crops.exhausted": "Demasiado cansado para seguir regando."
 }

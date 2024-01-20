@@ -1,3 +1,20 @@
+# v1.3.0
+
+I'm finally back, and taking a look at some long overdue bugs.
+
+The repository is going through a major overhaul that I started years ago but never finished, adding the BotFramework, which will allow me to extend this bot to other functions. So be on the look out for more mods.
+
+🐛 Bug Fix
+
+- No more jittering about.
+
+🚀 New Feature
+
+- Uses upgraded can.
+- Waters the pet bowl as well.
+- Animation cancel God? The bot can as well, see config.
+- Customizable keybindings in config as well as some other goodies.
+
 # v1.2.1
 
 🐛 Bug Fix

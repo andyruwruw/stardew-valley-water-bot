@@ -1,7 +1,13 @@
 {
-  "process.start": "Ideje kezdeni az öntözést!",
-  "process.end": "Befejezett",
-  "process.interrupt": "Megállt",
-  "process.exhausted": "Kimerült",
-  "process.waterless": "Nem találok vizet"
+  "bot.name": "VízBot",
+  "bot.description": "Öntözze meg növényeit úgy, hogy kattintson egy gombra, és dőljön hátra.",
+  "state.waterbot-empty-watering-can.name": "Üres öntözőkanna",
+  "state.waterbot-empty-watering-can.inaccessible": "Nem találok utántöltési helyet!",
+  "state.waterbot-finished-state.name": "Befejezett feladatok",
+  "state.waterbot-finished-state.activation": "A házimunkák készek!",
+  "state.waterbot-idle.name": "Tétlen és Várakozás",
+  "state.waterbot-watering-crops.name": "Növények öntözése",
+  "state.waterbot-watering-crops.activation": "Öntözze a terményt!",
+  "state.waterbot-watering-crops.interrupt": "A házimunkák korai abbahagyása.",
+  "state.waterbot-watering-crops.exhausted": "Túl fáradt ahhoz, hogy folytassa az öntözést."
 }

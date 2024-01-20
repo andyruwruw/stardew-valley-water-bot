@@ -1,7 +1,13 @@
 {
-  "process.start": "Пора начинать полив!",
-  "process.end": "Законченный полив",
-  "process.interrupt": "Прекращение полива",
-  "process.exhausted": "Устали поливать",
-  "process.waterless": "Не удалось найти воду!"
+  "bot.name": "Водяной Бот",
+  "bot.description": "Поливайте все свои растения, нажав кнопку и откинувшись на спинку стула.",
+  "state.waterbot-empty-watering-can.name": "Пустая лейка",
+  "state.waterbot-empty-watering-can.inaccessible": "Не могу найти место для пополнения!",
+  "state.waterbot-finished-state.name": "Выполненные задачи",
+  "state.waterbot-finished-state.activation": "Дела завершены!",
+  "state.waterbot-idle.name": "Простой и ожидание",
+  "state.waterbot-watering-crops.name": "Полив сельскохозяйственных культур",
+  "state.waterbot-watering-crops.activation": "Поливайте свои посевы!",
+  "state.waterbot-watering-crops.interrupt": "Прекращайте работу по дому пораньше.",
+  "state.waterbot-watering-crops.exhausted": "Слишком устал, чтобы продолжать поливать."
 }

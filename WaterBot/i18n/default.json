@@ -1,7 +1,13 @@
 {
-  "process.start": "Time to Start Watering!",
-  "process.end": "Finished Watering",
-  "process.interrupt": "Stopped Watering",
-  "process.exhausted": "Tired of Watering",
-  "process.waterless": "Could not Find Water!"
+  "bot.name": "WaterBot",
+  "bot.description": "Water all your plants by clicking a button and sitting back.",
+  "state.waterbot-empty-watering-can.name": "Empty Watering Can",
+  "state.waterbot-empty-watering-can.inaccessible": "Can't find a place to refill!",
+  "state.waterbot-finished-state.name": "Finished Tasks",
+  "state.waterbot-finished-state.activation": "Chores complete!",
+  "state.waterbot-idle.name": "Idle and Waiting",
+  "state.waterbot-watering-crops.name": "Watering Crops",
+  "state.waterbot-watering-crops.activation": "Watering your crops!",
+  "state.waterbot-watering-crops.interrupt": "Stopping chores early.",
+  "state.waterbot-watering-crops.exhausted": "Too tired to keep watering."
 }

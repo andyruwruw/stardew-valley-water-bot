@@ -1,7 +1,13 @@
 {
-  "process.start": "Zeit, die Pflanzen zu gießen!",
-  "process.end": "Fertige Bewässerung",
-  "process.interrupt": "Gehört auf zu gießen",
-  "process.exhausted": "Müde vom Gießen",
-  "process.waterless": "Konnte kein Wasser finden!"
+  "bot.name": "Wasserbot",
+  "bot.description": "Bewässern Sie alle Ihre Pflanzen, indem Sie auf eine Schaltfläche klicken und sich zurücklehnen.",
+  "state.waterbot-empty-watering-can.name": "Leere Gießkanne",
+  "state.waterbot-empty-watering-can.inaccessible": "Ich kann keinen Platz zum Nachfüllen finden!",
+  "state.waterbot-finished-state.name": "Erledigte Aufgaben",
+  "state.waterbot-finished-state.activation": "Aufgaben erledigt!",
+  "state.waterbot-idle.name": "Leerlauf und Warten",
+  "state.waterbot-watering-crops.name": "Bewässerung von Pflanzen",
+  "state.waterbot-watering-crops.activation": "Bewässern Sie Ihre Pflanzen!",
+  "state.waterbot-watering-crops.interrupt": "Aufgaben frühzeitig beenden.",
+  "state.waterbot-watering-crops.exhausted": "Zu müde, um weiter zu gießen."
 }

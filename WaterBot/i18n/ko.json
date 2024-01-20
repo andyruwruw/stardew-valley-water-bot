@@ -1,7 +1,13 @@
 {
-  "process.start": "물주기를 시작할 시간입니다",
-  "process.end": "완성 된 급수",
-  "process.interrupt": "급수 중지",
-  "process.exhausted": "물주기에 지쳤습니다",
-  "process.waterless": "물을 찾을 수 없습니다"
+  "bot.name": "워터봇",
+  "bot.description": "버튼을 클릭하고 편안히 앉아 모든 식물에 물을 주세요.",
+  "state.waterbot-empty-watering-can.name": "빈 물뿌리개",
+  "state.waterbot-empty-watering-can.inaccessible": "충전할 곳을 찾을 수 없습니다!",
+  "state.waterbot-finished-state.name": "완료된 작업",
+  "state.waterbot-finished-state.activation": "집안일 완료!",
+  "state.waterbot-idle.name": "유휴 및 대기 중",
+  "state.waterbot-watering-crops.name": "작물에 물주기",
+  "state.waterbot-watering-crops.activation": "농작물에 물을 주세요!",
+  "state.waterbot-watering-crops.interrupt": "집안일을 일찍 중단합니다.",
+  "state.waterbot-watering-crops.exhausted": "계속 물을 주기에는 너무 피곤합니다."
 }

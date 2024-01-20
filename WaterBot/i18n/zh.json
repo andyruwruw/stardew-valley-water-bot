@@ -1,7 +1,13 @@
 {
-  "process.start": "是时候开始浇水了",
-  "process.end": "完成浇水",
-  "process.interrupt": "浇水停止了",
-  "process.exhausted": "厌倦了浇水",
-  "process.waterless": "找不到水"
+  "bot.name": "水机器人",
+  "bot.description": "单击按钮并坐下来给所有植物浇水。",
+  "state.waterbot-empty-watering-can.name": "空喷壶",
+  "state.waterbot-empty-watering-can.inaccessible": "找不到地方补充！",
+  "state.waterbot-finished-state.name": "已完成的任务",
+  "state.waterbot-finished-state.activation": "家务事完成！",
+  "state.waterbot-idle.name": "空闲和等待",
+  "state.waterbot-watering-crops.name": "浇灌作物",
+  "state.waterbot-watering-crops.activation": "给你的庄稼浇水！",
+  "state.waterbot-watering-crops.interrupt": "尽早停止家务活。",
+  "state.waterbot-watering-crops.exhausted": "太累了，没力气继续浇水。"
 }

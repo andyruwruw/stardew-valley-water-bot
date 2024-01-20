@@ -1,7 +1,13 @@
 {
-  "process.start": "Sulamaya Başlama Zamanı!",
-  "process.end": "Sulama Bitti",
-  "process.interrupt": "Sulama Durduruldu",
-  "process.exhausted": "Sulamadan Bıktım",
-  "process.waterless": "Su Bulunamadı!"
+  "bot.name": "SuBotu",
+  "bot.description": "Bir düğmeye tıklayarak ve arkanıza yaslanarak tüm bitkilerinizi sulayın.",
+  "state.waterbot-empty-watering-can.name": "Boş Sulama Kabı",
+  "state.waterbot-empty-watering-can.inaccessible": "Dolduracak yer bulamıyorum!",
+  "state.waterbot-finished-state.name": "Biten Görevler",
+  "state.waterbot-finished-state.activation": "Ev işleri tamamlandı!",
+  "state.waterbot-idle.name": "Boşta ve Beklemede",
+  "state.waterbot-watering-crops.name": "Bitkileri Sulamak",
+  "state.waterbot-watering-crops.activation": "Ekinlerinizi sulayın!",
+  "state.waterbot-watering-crops.interrupt": "İşleri erken durdurmak.",
+  "state.waterbot-watering-crops.exhausted": "Sulamaya devam edemeyecek kadar yorgunum."
 }

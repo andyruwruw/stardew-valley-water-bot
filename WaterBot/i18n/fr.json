@@ -1,7 +1,13 @@
 {
-  "process.start": "Temps de commencer à arroser!",
-  "process.end": "Arrosage terminé",
-  "process.interrupt": "Arrosage arrêté",
-  "process.exhausted": "Fatigué d'arroser",
-  "process.waterless": "Impossible de trouver de l'eau!"
+  "bot.name": "EauBot",
+  "bot.description": "Arrosez toutes vos plantes en cliquant sur un bouton et en vous asseyant.",
+  "state.waterbot-empty-watering-can.name": "Arrosoir vide",
+  "state.waterbot-empty-watering-can.inaccessible": "Je ne trouve pas d'endroit pour faire le plein!",
+  "state.waterbot-finished-state.name": "Tâches terminées",
+  "state.waterbot-finished-state.activation": "Corvées terminées!",
+  "state.waterbot-idle.name": "Inactif et en attente",
+  "state.waterbot-watering-crops.name": "Arroser les cultures",
+  "state.waterbot-watering-crops.activation": "Arrosez vos cultures!",
+  "state.waterbot-watering-crops.interrupt": "Arrêter les tâches plus tôt.",
+  "state.waterbot-watering-crops.exhausted": "Trop fatigué pour continuer à arroser."
 }

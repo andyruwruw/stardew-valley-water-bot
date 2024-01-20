@@ -1,7 +1,13 @@
 {
-  "process.start": "È ora di iniziare ad annaffiare!",
-  "process.end": "Irrigazione finita",
-  "process.interrupt": "Irrigazione interrotta",
-  "process.exhausted": "Stanco di annaffiare",
-  "process.waterless": "Impossibile trovare l'acqua!"
+  "bot.name": "AcquaRobot",
+  "bot.description": "Innaffia tutte le tue piante facendo clic su un pulsante e sedendoti.",
+  "state.waterbot-empty-watering-can.name": "Annaffiatoio vuoto",
+  "state.waterbot-empty-watering-can.inaccessible": "Non riesco a trovare un posto dove fare rifornimento!",
+  "state.waterbot-finished-state.name": "Compiti finiti",
+  "state.waterbot-finished-state.activation": "Lavori completati!",
+  "state.waterbot-idle.name": "Inattivo e in attesa",
+  "state.waterbot-watering-crops.name": "Colture d'irrigazione",
+  "state.waterbot-watering-crops.activation": "Innaffia le tue colture!",
+  "state.waterbot-watering-crops.interrupt": "Interrompere presto le faccende domestiche.",
+  "state.waterbot-watering-crops.exhausted": "Troppo stanco per continuare ad annaffiare."
 }

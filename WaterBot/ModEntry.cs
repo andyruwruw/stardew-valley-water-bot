@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -63,7 +61,7 @@ namespace WaterBot
             // Is the player using a Watering Can on their Farm?
             if (Game1.player.CurrentItem is WateringCan)
             {
-                // Find action tilesw
+                // Find action tiles
                 Vector2 mousePosition = Utility.PointToVector2(Game1.getMousePosition()) + new Vector2(Game1.viewport.X, Game1.viewport.Y);
                 Vector2 toolLocation = Game1.player.GetToolLocation(mousePosition);
                 Vector2 tile = Utility.clampToTile(toolLocation);
@@ -81,8 +79,8 @@ namespace WaterBot
                         Game1.currentLocation.terrainFeatures[rounded] is HoeDirt &&
                         (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop != null &&
                         (((Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.fullyGrown &&
-                        (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.dayOfCurrentPhase > 0) ||
-                        ((Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.currentPhase < (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.phaseDays.Count - 1)))
+                        (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.dayOfCurrentPhase > 0) || 
+                            ((Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.currentPhase < (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.phaseDays.Count - 1)))
                     {
                         return true;
                     }

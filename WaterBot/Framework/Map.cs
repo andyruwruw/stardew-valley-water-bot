@@ -96,7 +96,7 @@ namespace WaterBot.Framework
                 ((((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.fullyGrown &&
                 (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.dayOfCurrentPhase > 0) ||
                 ((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.currentPhase < (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.phaseDays.Count - 1)) ||
-                (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.regrowAfterHarvest != -1));
+                (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.RegrowsAfterHarvest()));
         }
 
         /// <summary>
@@ -461,7 +461,7 @@ namespace WaterBot.Framework
                         }
                         else if (j == 0 || i == 0)
                         {
-                            Point start = new Point(Game1.player.getTileX(), Game1.player.getTileY());
+                            Point start = new Point(Game1.player.TilePoint.X, Game1.player.TilePoint.Y);
                             Point end = this.groupings[i == 0 ? j - 1 : i - 1].Centroid(this);
 
                             Tuple<List<Tile>, int> path = this.walkablePathBetweenPoints(console, start, end);
@@ -612,7 +612,7 @@ namespace WaterBot.Framework
 
             // Queue for depth first search
             List<Tile> stack = new List<Tile>();
-            stack.Add(group.findClosestTile(Game1.player.getTileX(), Game1.player.getTileY()).Item1);
+            stack.Add(group.findClosestTile(Game1.player.TilePoint.X, Game1.player.TilePoint.Y).Item1);
 
             bool keepGoing;
             do

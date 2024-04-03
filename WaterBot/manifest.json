@@ -1,11 +1,11 @@
 {
   "Name": "WaterBot",
   "Author": "andyruwruw",
-  "Version": "1.2.1",
+  "Version": "1.2.2-unofficial.1-lily927",
   "Description": "Water all your plants by clicking a button and sitting back.",
   "UniqueID": "andyruwruw.WaterBot",
   "EntryDll": "WaterBot.dll",
-  "MinimumApiVersion": "3.0.0",
+  "MinimumApiVersion": "4.0.0",
   "UpdateKeys": [
     "Nexus:8167",
     "Github:andyruwruw/stardew-valley-water-bot"

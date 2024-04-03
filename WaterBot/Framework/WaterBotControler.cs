@@ -84,7 +84,7 @@ namespace WaterBot.Framework
                 return;
             }
 
-            Game1.player.controller = new PathFindController(Game1.player, Game1.currentLocation, this.order[this.currentTile].getStand(), 2, this.startWatering);
+            Game1.player.controller = new StardewValley.Pathfinding.PathFindController(Game1.player, Game1.currentLocation, this.order[this.currentTile].getStand(), 2, this.startWatering);
         }
 
         /// <summary>
@@ -133,19 +133,19 @@ namespace WaterBot.Framework
         /// <param name="tile">Tile to water.</param>
         public void water(Point tile)
         {
-            if (Game1.player.getTileY() > tile.Y)
+            if (Game1.player.Tile.Y > tile.Y)
             {
                 Game1.player.FacingDirection = 0;
             }
-            else if (Game1.player.getTileY() < tile.Y)
+            else if (Game1.player.Tile.Y < tile.Y)
             {
                 Game1.player.FacingDirection = 2;
             }
-            else if (Game1.player.getTileX() > tile.X)
+            else if (Game1.player.Tile.X > tile.X)
             {
                 Game1.player.FacingDirection = 3;
             }
-            else if (Game1.player.getTileX() < tile.X)
+            else if (Game1.player.Tile.X < tile.X)
             {
                 Game1.player.FacingDirection = 1;
             }
@@ -155,7 +155,7 @@ namespace WaterBot.Framework
                 Game1.player.EndEmoteAnimation();
             }
 
-            Game1.player.FarmerSprite.setOwner(Game1.player);
+            Game1.player.FarmerSprite.SetOwner(Game1.player);
             Game1.player.CanMove = false;
             Game1.player.UsingTool = true;
             Game1.player.canReleaseTool = true;
@@ -221,19 +221,19 @@ namespace WaterBot.Framework
                 this.order = this.map.findFillPath(this.path[this.currentGroup], this.console);
             }
 
-            Game1.player.controller = new PathFindController(Game1.player, Game1.currentLocation, this.order[this.currentTile].getStand(), 2, this.startWatering);
+            Game1.player.controller = new StardewValley.Pathfinding.PathFindController(Game1.player, Game1.currentLocation, this.order[this.currentTile].getStand(), 2, this.startWatering);
         }
 
         public void navigateNoUpdate()
         {
-            Game1.player.controller = new PathFindController(Game1.player, Game1.currentLocation, this.order[this.currentTile].getStand(), 2, this.startWatering);
+            Game1.player.controller = new StardewValley.Pathfinding.PathFindController(Game1.player, Game1.currentLocation, this.order[this.currentTile].getStand(), 2, this.startWatering);
         }
 
         public void refillWater()
         {
             if (!this.active) return;
 
-            Tile playerLocation = this.map.map[Game1.player.getTileY()][Game1.player.getTileX()];
+            Tile playerLocation = this.map.map[(int)Game1.player.Tile.Y][(int)Game1.player.Tile.X];
 
             this.refillStation = this.map.getClosestRefill(playerLocation, this.console);
 
@@ -241,7 +241,7 @@ namespace WaterBot.Framework
 
             if (this.refillStation != null)
             {
-                Game1.player.controller = new PathFindController(Game1.player, Game1.currentLocation, refillStation.getStand(), 2, this.startRefilling);
+                Game1.player.controller = new StardewValley.Pathfinding.PathFindController(Game1.player, Game1.currentLocation, refillStation.getStand(), 2, this.startRefilling);
             }
             else
             {

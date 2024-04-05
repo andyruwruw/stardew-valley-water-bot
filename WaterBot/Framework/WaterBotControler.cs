@@ -153,6 +153,7 @@ namespace WaterBot.Framework
                 Game1.player.EndEmoteAnimation();
             }
 
+            Game1.player.FarmerSprite.SetOwner(Game1.player);
             Game1.player.CanMove = false;
             Game1.player.UsingTool = true;
             Game1.player.canReleaseTool = true;

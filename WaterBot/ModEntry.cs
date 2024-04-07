@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using BotFramework;
+using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -22,7 +23,9 @@ namespace WaterBot
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
         public override void Entry(IModHelper helper)
         {
+            Logger.SetMonitor(Monitor);
             this.bot = new WaterBotControler(helper);
+            // Set static reference to monitor for logging.
 
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
         }
@@ -41,13 +44,13 @@ namespace WaterBot
 
             if (this.bot.active)
             {
-                this.console("Player provided interrupt signal. Process stopped.");
+                Logger.Log("Player provided interrupt signal. Process stopped.");
                 this.bot.stop();
             } else if (e.Button.IsActionButton()) // SButton.MouseRight 
             {
                 if (this.isWateringHoedDirt())
                 {
-                    this.console("Player provided trigger to begin bot.");
+                    Logger.Log("Player provided trigger to begin bot.");
                     this.bot.start(this.console);
                 }
             }
@@ -96,7 +99,7 @@ namespace WaterBot
         /// <param name="message">Message text.</param>
         public void console(string message)
         {
-            this.Monitor.Log(message, LogLevel.Debug);
+            Logger.Log(message, LogLevel.Debug);
         }
     }
 }

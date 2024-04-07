@@ -4,6 +4,9 @@ using StardewValley.TerrainFeatures;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using BotFramework;
+using xTile.Tiles;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace WaterBot.Framework
 {
@@ -87,16 +90,19 @@ namespace WaterBot.Framework
         /// <param name="y">Y of tile.</param>
         public static bool tileNeedsWatering(int x, int y)
         {
+            TerrainFeature feature;
             Vector2 index = new Vector2(x, y);
 
-            return (Game1.currentLocation.isTileHoeDirt(index) &&
+            return Game1.currentLocation.isTileHoeDirt(index) &&
+                Game1.currentLocation.GetHoeDirtAtTile(index) != null &&
+                Game1.currentLocation.terrainFeatures.TryGetValue(index, out feature) &&
                 ((Game1.currentLocation.terrainFeatures[index] as HoeDirt).state.Value == 0) &&
                 ((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop != null) &&
                 (!(Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.dead) &&
-                ((((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.fullyGrown &&
+                (((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.fullyGrown &&
                 (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.dayOfCurrentPhase > 0) ||
-                ((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.currentPhase < (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.phaseDays.Count - 1)) ||
-                (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.RegrowsAfterHarvest()));
+                ((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.currentPhase < (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.phaseDays.Count - 1) ||
+                (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.RegrowsAfterHarvest());
         }
 
         /// <summary>

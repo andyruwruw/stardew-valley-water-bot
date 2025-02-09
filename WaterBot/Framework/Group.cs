@@ -10,7 +10,6 @@ namespace WaterBot.Framework
     class Group
     {
         private List<Tile> list;
-
         public int index;
 
         public Group(int index)
@@ -51,7 +50,7 @@ namespace WaterBot.Framework
         }
 
         /// <summary>
-        /// Finds the tile closes to the centroid of all the points.
+        /// Finds the tile closest to the centroid of all the points.
         /// </summary>
         public Point Centroid(Map map)
         {
@@ -67,9 +66,9 @@ namespace WaterBot.Framework
             Point centroid = new Point(sumOfX / this.list.Count, sumOfY / this.list.Count);
 
             int shortest = int.MaxValue;
-            Tile centerWalkableTile = null;
+            Tile? centerWalkableTile = null;
             int shortestNonWalkable = int.MaxValue;
-            Tile centerNonWalkableTile = null;
+            Tile? centerNonWalkableTile = null;
 
             foreach (Tile tile in this.list)
             {
@@ -77,25 +76,26 @@ namespace WaterBot.Framework
                 {
                     shortest = tile.distanceTo(centroid);
                     centerWalkableTile = tile;
-                }else if (tile.block && tile.distanceTo(centroid) < shortestNonWalkable)
+                }
+                else if (tile.block && tile.distanceTo(centroid) < shortestNonWalkable)
                 {
                     shortestNonWalkable = tile.distanceTo(centroid);
                     centerNonWalkableTile = tile;
                 }
             }
 
-            if (centerWalkableTile == null)
+            if (centerWalkableTile == null && centerNonWalkableTile != null)
             {
                 return map.findClosestWalkableTile(centerNonWalkableTile).getPoint();
             }
 
-            return centerWalkableTile.getPoint();
+            return centerWalkableTile?.getPoint() ?? centroid;
         }
 
         public Tuple<Tile, double> findClosestTile(int x, int y)
         {
-            Tile shortestTile = null;
-            double shortest = float.MaxValue;
+            Tile? shortestTile = null;
+            double shortest = double.MaxValue;
 
             foreach (Tile tile in this.list)
             {
@@ -108,7 +108,7 @@ namespace WaterBot.Framework
                 }
             }
 
-            return Tuple.Create(shortestTile, shortest);
+            return Tuple.Create(shortestTile!, shortest);
         }
     }
 }

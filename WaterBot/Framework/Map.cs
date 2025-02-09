@@ -33,6 +33,9 @@ namespace WaterBot.Framework
 
         public Map()
         {
+            this.map = new List<List<Tile>>();
+            this.waterableTiles = new List<Tile>();
+            this.groupings = new List<Group>();
             this.directions = new Tuple<int, int, Func<int, int, bool>>[] {
                 new Tuple<int, int, Func<int, int, bool>>(1, 0, (int y, int x) => y < this.height),
                 new Tuple<int, int, Func<int, int, bool>>(-1, 0, (int y, int x) => y >= 0),
@@ -90,19 +93,29 @@ namespace WaterBot.Framework
         /// <param name="y">Y of tile.</param>
         public static bool tileNeedsWatering(int x, int y)
         {
-            TerrainFeature feature;
             Vector2 index = new Vector2(x, y);
 
-            return Game1.currentLocation.isTileHoeDirt(index) &&
-                Game1.currentLocation.GetHoeDirtAtTile(index) != null &&
-                Game1.currentLocation.terrainFeatures.TryGetValue(index, out feature) &&
-                ((Game1.currentLocation.terrainFeatures[index] as HoeDirt).state.Value == 0) &&
-                ((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop != null) &&
-                (!(Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.dead) &&
-                (((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.fullyGrown &&
-                (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.dayOfCurrentPhase > 0) ||
-                ((Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.currentPhase < (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.phaseDays.Count - 1) ||
-                (Game1.currentLocation.terrainFeatures[index] as HoeDirt).crop.RegrowsAfterHarvest());
+            if (!Game1.currentLocation.isTileHoeDirt(index))
+                return false;
+
+            if (!Game1.currentLocation.terrainFeatures.TryGetValue(index, out TerrainFeature feature))
+                return false;
+
+            if (feature is HoeDirt hoeDirt)
+            {
+                if (hoeDirt.state.Value != 0)
+                    return false;
+
+                Crop crop = hoeDirt.crop;
+                if (crop == null || crop.dead.Value)
+                    return false;
+
+                return (crop.fullyGrown.Value && crop.dayOfCurrentPhase.Value > 0) ||
+                       (crop.currentPhase.Value < crop.phaseDays.Count - 1) ||
+                       crop.RegrowsAfterHarvest();
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -344,7 +357,7 @@ namespace WaterBot.Framework
                 }
             }
 
-            return null;
+            throw new InvalidOperationException("No refill location found.");
         }
 
         /// <summary>
@@ -409,7 +422,7 @@ namespace WaterBot.Framework
                     {
                         if (!cameFrom.Keys.Contains(neighbor))
                         {
-                            cameFrom.Add(neighbor, null);
+                            cameFrom.Add(neighbor, current);
                         }
                         if (!fScore.Keys.Contains(neighbor))
                         {
@@ -427,7 +440,7 @@ namespace WaterBot.Framework
                     }
                 }
             }
-            return new Tuple<List<Tile>, int>(null, int.MaxValue);
+            return new Tuple<List<Tile>, int>(new List<Tile>(), int.MaxValue);
         }
 
         /// <summary>
@@ -659,7 +672,7 @@ namespace WaterBot.Framework
                         if (current.block)
                         {
                             int score = 0;
-                            Tile bestOption = null;
+                            Tile bestOption = this.map[current.y][current.x];
 
                             // If you can stand on adjacents, do it.
                             foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions.Concat(this.diagonals))
@@ -765,7 +778,7 @@ namespace WaterBot.Framework
         /// <summary>
         /// Finds the closest refill location
         /// </summary>
-        public ActionableTile getClosestRefill(Tile start, console console)
+        public ActionableTile? getClosestRefill(Tile start, console console)
         {
             foreach (List<Tile> row in this.map)
             {
@@ -776,10 +789,10 @@ namespace WaterBot.Framework
             }
 
             List<Tuple<Tile, Tile>> queue = new List<Tuple<Tile, Tile>>(); // Current, Last
-            queue.Add(new Tuple<Tile, Tile>(start, null));
+            queue.Add(new Tuple<Tile, Tile>(start, null!));
 
-            Tile current = null;
-            Tile last = null;
+            Tile? current = null;
+            Tile? last = null;
 
             while (queue.Count > 0)
             {

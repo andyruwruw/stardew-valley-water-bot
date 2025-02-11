@@ -14,7 +14,7 @@ namespace WaterBot
     /// </summary>
     public class WaterBot : Mod
     {
-        private WaterBotControler bot;
+        private WaterBotControler? bot;
 
         /// <summary>
         /// The mod entry point, called after the mod is first loaded.
@@ -36,22 +36,23 @@ namespace WaterBot
         /// 
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
-        private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
+        private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
         {
             // ignore if player hasn't loaded a save yet
             if (!Context.IsWorldReady)
                 return;
 
-            if (this.bot.active)
+            if (this.bot?.active == true)
             {
                 Logger.Log("Player provided interrupt signal. Process stopped.");
                 this.bot.stop();
-            } else if (e.Button.IsActionButton()) // SButton.MouseRight 
+            }
+            else if (e.Button.IsActionButton()) // SButton.MouseRight 
             {
                 if (this.isWateringHoedDirt())
                 {
                     Logger.Log("Player provided trigger to begin bot.");
-                    this.bot.start(this.console);
+                    this.bot?.start(this.console);
                 }
             }
         }
@@ -62,7 +63,7 @@ namespace WaterBot
         private bool isWateringHoedDirt()
         {
             // Is the player using a Watering Can on their Farm?
-            if (Game1.player.CurrentItem is WateringCan)
+            if (Game1.player?.CurrentItem is WateringCan)
             {
                 // Find action tiles
                 Vector2 mousePosition = Utility.PointToVector2(Game1.getMousePosition()) + new Vector2(Game1.viewport.X, Game1.viewport.Y);
@@ -78,12 +79,12 @@ namespace WaterBot
                     Vector2 rounded = new Vector2((float)Math.Round(tileLocation.X), (float)Math.Round(tileLocation.Y));
 
                     // If they just watered Hoe Dirt, return true
-                    if (Game1.currentLocation.terrainFeatures.ContainsKey(rounded) &&
-                        Game1.currentLocation.terrainFeatures[rounded] is HoeDirt &&
-                        (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop != null &&
-                        (((Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.fullyGrown &&
-                        (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.dayOfCurrentPhase > 0) || 
-                            ((Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.currentPhase < (Game1.currentLocation.terrainFeatures[rounded] as HoeDirt).crop.phaseDays.Count - 1)))
+                    if (Game1.currentLocation?.terrainFeatures.ContainsKey(rounded) == true &&
+                        Game1.currentLocation.terrainFeatures[rounded] is HoeDirt dirt &&
+                        dirt.crop != null &&
+                        ((dirt.crop.fullyGrown.Value &&
+                        dirt.crop.dayOfCurrentPhase.Value > 0) || 
+                            (dirt.crop.currentPhase.Value < dirt.crop.phaseDays.Count - 1)))
                     {
                         return true;
                     }

@@ -6,9 +6,7 @@ namespace WaterBot.Framework
     class ActionableTile
     {
         private Point stand;
-
         private List<Point> executeOn;
-
         private Action action;
 
         public enum Action
@@ -27,12 +25,13 @@ namespace WaterBot.Framework
         {
             this.stand = stand;
             this.action = action;
+            this.executeOn = new List<Point>();
         }
 
         public ActionableTile(Point stand, List<Point> executeOn, Action action)
         {
             this.stand = stand;
-            this.executeOn = executeOn;
+            this.executeOn = executeOn ?? new List<Point>();
             this.action = action;
         }
 
@@ -48,12 +47,12 @@ namespace WaterBot.Framework
 
         public Action getAction()
         {
-            return action;
+            return this.action;
         }
 
         public void setExecuteOn(List<Point> executeOn)
         {
-            this.executeOn = executeOn;
+            this.executeOn = executeOn ?? new List<Point>();
         }
 
         public void pushExecuteOn(Point executeOn)
@@ -75,7 +74,7 @@ namespace WaterBot.Framework
 
         public bool isDone()
         {
-            return (this.executeOn.Count == 0);
+            return this.executeOn.Count == 0;
         }
     }
 }

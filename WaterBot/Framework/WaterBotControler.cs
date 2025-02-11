@@ -3,6 +3,7 @@ using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Tools;
 using StardewValley.Pathfinding;
+using System.Threading.Tasks;
 
 namespace WaterBot.Framework
 {
@@ -11,29 +12,23 @@ namespace WaterBot.Framework
     /// </summary>
     class WaterBotControler
     {
-        private IModHelper helper;
-
+        private readonly IModHelper helper;
         public bool active;
-
         public Map map;
-
         public int currentGroup;
-
         public List<Group> path;
-
         public int currentTile;
-
         public List<ActionableTile> order;
-
-        private ActionableTile refillStation;
-
-        public console console;
+        private ActionableTile? refillStation;
+        public console? console;
 
         public WaterBotControler(IModHelper helper)
         {
             this.helper = helper;
             this.active = false;
             this.map = new Map();
+            this.path = new List<Group>();
+            this.order = new List<ActionableTile>();
         }
 
         /// <summary>
@@ -78,7 +73,6 @@ namespace WaterBot.Framework
             if (((WateringCan)Game1.player.CurrentTool).WaterLeft <= 0)
             {
                 this.refillWater();
-
                 return;
             }
 
@@ -106,7 +100,6 @@ namespace WaterBot.Framework
             if (((WateringCan)Game1.player.CurrentTool).WaterLeft <= 0)
             {
                 this.refillWater();
-
                 return;
             }
 
@@ -115,8 +108,7 @@ namespace WaterBot.Framework
             if (point.X != -1)
             {
                 this.water(point);
-
-                Task.Delay(new TimeSpan(0, 0, 0, 0, 800)).ContinueWith(o => { this.startWatering(c, location); });
+                Task.Delay(800).ContinueWith(o => { this.startWatering(c, location); });
             }
             else
             {
@@ -207,7 +199,7 @@ namespace WaterBot.Framework
 
             if (this.currentTile >= this.order.Count)
             {
-                this.currentGroup = this.currentGroup += 1;
+                this.currentGroup += 1;
                 this.currentTile = 0;
 
                 if (this.currentGroup >= this.path.Count)
@@ -216,7 +208,16 @@ namespace WaterBot.Framework
                     return;
                 }
 
-                this.order = this.map.findFillPath(this.path[this.currentGroup], this.console);
+                if (console != null)
+                {
+                    this.order = this.map.findFillPath(this.path[this.currentGroup], console);
+                }
+                else
+                {
+                    this.console?.Invoke("Console is null. Ending process.");
+                    this.active = false;
+                    return;
+                }
             }
 
             Game1.player.controller = new PathFindController(Game1.player, Game1.currentLocation, this.order[this.currentTile].getStand(), 2, this.startWatering);
@@ -233,7 +234,16 @@ namespace WaterBot.Framework
 
             Tile playerLocation = this.map.map[Game1.player.TilePoint.Y][Game1.player.TilePoint.X];
 
-            this.refillStation = this.map.getClosestRefill(playerLocation, this.console);
+            if (console != null)
+            {
+                this.refillStation = this.map.getClosestRefill(playerLocation, console);
+            }
+            else
+            {
+                this.console?.Invoke("Console is null. Ending process.");
+                this.active = false;
+                return;
+            }
 
             if (!this.active) return;
 
@@ -259,13 +269,12 @@ namespace WaterBot.Framework
                 return;
             }
 
-            Point point = this.refillStation.Pop();
+            Point point = this.refillStation?.Pop() ?? new Point(-1, -1);
 
             if (point.X != -1)
             {
                 this.water(point);
-
-                Task.Delay(new TimeSpan(0, 0, 0, 0, 800)).ContinueWith(o => { this.navigateNoUpdate(); });
+                Task.Delay(800).ContinueWith(o => { this.navigateNoUpdate(); });
             }
         }
 
@@ -284,7 +293,7 @@ namespace WaterBot.Framework
         /// </summary>
         public void exhausted()
         {
-            this.console("Bot interrupted by lack of stamina. Ending process.");
+            this.console?.Invoke("Bot interrupted by lack of stamina. Ending process.");
             this.active = false;
             Game1.player.controller = null;
             this.displayMessage(this.helper.Translation.Get("process.exhausted"), 3);
@@ -295,7 +304,7 @@ namespace WaterBot.Framework
         /// </summary>
         public void noWater()
         {
-            this.console("Bot could not find suitable refill tile. Ending process.");
+            this.console?.Invoke("Bot could not find suitable refill tile. Ending process.");
             this.active = false;
             Game1.player.controller = null;
             this.displayMessage(this.helper.Translation.Get("process.waterless"), 3);
@@ -306,7 +315,7 @@ namespace WaterBot.Framework
         /// </summary>
         public void end()
         {
-            this.console("Bot finished watering accessible crops. Ending process.");
+            this.console?.Invoke("Bot finished watering accessible crops. Ending process.");
             this.active = false;
             Game1.player.controller = null;
             this.displayMessage(this.helper.Translation.Get("process.end"), 1);

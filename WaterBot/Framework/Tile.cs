@@ -9,32 +9,22 @@ namespace WaterBot.Framework
     class Tile
     {
         public bool block;
-
         public bool water;
-
         public bool waterable;
-
         public int x;
-
         public int y;
-
         public bool visited;
-
         public bool watered;
-
         public bool waterCheck;
-
         public bool walkableCheck;
 
         public Tile(int x, int y, bool block, bool water, bool waterable)
         {
             this.x = x;
             this.y = y;
-
             this.block = block;
             this.water = water;
             this.waterable = waterable;
-
             this.visited = false;
             this.watered = false;
             this.waterCheck = false;

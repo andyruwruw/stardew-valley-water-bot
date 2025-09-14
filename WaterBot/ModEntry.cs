@@ -14,7 +14,8 @@ namespace WaterBot
     /// </summary>
     public class WaterBot : Mod
     {
-        private WaterBotControler? bot;
+        internal static Config? config;
+        private WaterBotController? bot;
 
         /// <summary>
         /// The mod entry point, called after the mod is first loaded.
@@ -23,11 +24,13 @@ namespace WaterBot
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
         public override void Entry(IModHelper helper)
         {
+            config = helper.ReadConfig<Config>();
             Logger.SetMonitor(Monitor);
-            this.bot = new WaterBotControler(helper);
+            this.bot = new WaterBotController(helper);
             // Set static reference to monitor for logging.
 
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
+            helper.Events.GameLoop.GameLaunched += (s, e) => SetUpConfigMenu();
         }
 
         /// <summary>
@@ -101,6 +104,61 @@ namespace WaterBot
         public void console(string message)
         {
             Logger.Log(message, LogLevel.Debug);
+        }
+
+        public class Config
+        {
+            public bool UseSmallGrouping { get; set; } = false;
+            public bool RefillOnFinish { get; set; } = false;
+            public int RefillIfLower { get; set; } = 95;
+            public bool RedoPathOnRefill { get; set; } = false;
+        }
+
+        private void SetUpConfigMenu()
+        {
+            // get Generic Mod Config Menu's API (if it's installed)
+            var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+            if (configMenu is null)
+                return;
+
+            // register mod
+            configMenu.Register(
+                mod: this.ModManifest,
+                reset: () => config = new Config(),
+                save: () => this.Helper.WriteConfig<Config>(config)
+            );
+
+            // add some config options
+            configMenu.AddBoolOption(
+                mod: ModManifest,
+                name: () => this.Helper.Translation.Get("config.use_small_grouping.name"),
+                tooltip: () => this.Helper.Translation.Get("config.use_small_grouping.desc"),
+                getValue: () => config.UseSmallGrouping,
+                setValue: (bool b) => config.UseSmallGrouping = b
+            );
+            configMenu.AddBoolOption(
+                mod: ModManifest,
+                name: () => this.Helper.Translation.Get("config.refill_on_finish.name"),
+                tooltip: () => this.Helper.Translation.Get("config.refill_on_finish.desc"),
+                getValue: () => config.RefillOnFinish,
+                setValue: (bool b) => config.RefillOnFinish = b
+            );
+            configMenu.AddNumberOption(
+                mod: ModManifest,
+                name: () => this.Helper.Translation.Get("config.refill_if_lower.name"),
+                tooltip: () => this.Helper.Translation.Get("config.refill_if_lower.desc"),
+                getValue: () => config.RefillIfLower,
+                setValue: (int b) => config.RefillIfLower = b,
+                min: 0,
+                max: 100
+            );
+            configMenu.AddBoolOption(
+                mod: ModManifest,
+                name: () => this.Helper.Translation.Get("config.redo_path_on_refill.name"),
+                tooltip: () => this.Helper.Translation.Get("config.redo_path_on_refill.desc"),
+                getValue: () => config.RedoPathOnRefill,
+                setValue: (bool b) => config.RedoPathOnRefill = b
+            );
         }
     }
 }

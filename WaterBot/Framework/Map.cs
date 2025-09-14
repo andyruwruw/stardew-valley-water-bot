@@ -1,12 +1,6 @@
-﻿using StardewValley;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
+using StardewValley;
 using StardewValley.TerrainFeatures;
-using System.Collections.Generic;
-using System;
-using System.Linq;
-using BotFramework;
-using xTile.Tiles;
-using Microsoft.Xna.Framework.Graphics;
 
 namespace WaterBot.Framework
 {
@@ -21,32 +15,32 @@ namespace WaterBot.Framework
 
         public List<Tile> waterableTiles;
 
-        public List<Group> groupings;
-
         public int width;
 
         public int height;
 
-        private Tuple<int, int, Func<int, int, bool>>[] directions;
+        private (int Y, int X, Func<int, int, bool> IsInBounds)[] directions;
 
-        private Tuple<int, int, Func<int, int, bool>>[] diagonals;
+        private (int Y, int X, Func<int, int, bool> IsInBounds)[] diagonals;
+
+        private Dictionary<Vector2, List<Tile>> neighborDict;
+        private Dictionary<Vector2, List<Tile>> coveredByDict;
 
         public Map()
         {
             this.map = new List<List<Tile>>();
             this.waterableTiles = new List<Tile>();
-            this.groupings = new List<Group>();
-            this.directions = new Tuple<int, int, Func<int, int, bool>>[] {
-                new Tuple<int, int, Func<int, int, bool>>(1, 0, (int y, int x) => y < this.height),
-                new Tuple<int, int, Func<int, int, bool>>(-1, 0, (int y, int x) => y >= 0),
-                new Tuple<int, int, Func<int, int, bool>>(0, 1, (int y, int x) => x < this.width),
-                new Tuple<int, int, Func<int, int, bool>>(0, -1, (int y, int x) => x >= 0),
+            this.directions = new (int Y, int X, Func<int, int, bool> IsInBounds)[] {
+                new (1, 0, (int y, int x) => y < this.height),
+                new (-1, 0, (int y, int x) => y >= 0),
+                new (0, 1, (int y, int x) => x < this.width),
+                new (0, -1, (int y, int x) => x >= 0),
             };
-            this.diagonals = new Tuple<int, int, Func<int, int, bool>>[] {
-                new Tuple<int, int, Func<int, int, bool>>(1, 1, (int y, int x) => x < this.width && y < this.height),
-                new Tuple<int, int, Func<int, int, bool>>(-1, -1, (int y, int x) => x >= 0 && y >= 0),
-                new Tuple<int, int, Func<int, int, bool>>(1, -1, (int y, int x) => x >= 0 && y < this.height),
-                new Tuple<int, int, Func<int, int, bool>>(-1, 1, (int y, int x) => x < this.width && y >= 0),
+            this.diagonals = new (int Y, int X, Func<int, int, bool> IsInBounds)[] {
+                new (1, 1, (int y, int x) => x < this.width && y < this.height),
+                new (-1, -1, (int y, int x) => x >= 0 && y >= 0),
+                new (1, -1, (int y, int x) => x >= 0 && y < this.height),
+                new (-1, 1, (int y, int x) => x < this.width && y >= 0),
             };
         }
 
@@ -209,12 +203,92 @@ namespace WaterBot.Framework
 
         /// <summary>
         /// Find all groupings of waterable tiles
+        /// This does create groups based on link, but reach
+        /// </summary>
+        public List<Group> getMinimalCoverGroups()
+        {
+            neighborDict = new();
+            coveredByDict = new();
+            // Find Minimal cover groups
+            // 1. Find all groups
+            foreach (var waterableTile in waterableTiles)
+            {
+                var waterableVector = new Vector2(waterableTile.x, waterableTile.y);
+                neighborDict[waterableVector] = new() { waterableTile };
+                foreach (var change in directions.Concat(diagonals))
+                {
+                    if (change.IsInBounds(waterableTile.y + change.Y, waterableTile.x + change.X))
+                    {
+                        var neighborTile = map[waterableTile.y + change.Y][waterableTile.x + change.X];
+                        if (neighborTile.waterable)
+                        {
+                            var neighborVector = new Vector2(neighborTile.x, neighborTile.y);
+                            neighborDict[waterableVector].Add(neighborTile);
+                            if (coveredByDict.TryGetValue(neighborVector, out var coverList))
+                            {
+                                coverList.Add(waterableTile);
+                            }
+                            else
+                            {
+                                coveredByDict[neighborVector] = new() { waterableTile };
+                            }
+                        }
+                    }
+                }
+            }
+            Dictionary<Tile, List<Tile>> groups = new();
+            var lonelyTiles = waterableTiles.Where(tile => !coveredByDict.ContainsKey(new Vector2(tile.x, tile.y))).ToArray();
+            foreach (var tile in lonelyTiles)
+            {
+                groups.Add(tile, new() { tile });
+            }
+            while (neighborDict.Count > lonelyTiles.Length)
+            {
+                // 2.  Remove shadowed groups
+                foreach (var waterableTile in waterableTiles)
+                {
+                    var waterableVector = new Vector2(waterableTile.x, waterableTile.y);
+                    var isInPlay = neighborDict.TryGetValue(waterableVector, out var neighbors);
+                    if (!isInPlay || neighbors!.Count == 9) continue;
+                    var isInShadow = neighbors.Any(neighbor => neighbor != waterableTile && neighborDict.TryGetValue(new Vector2(neighbor.x, neighbor.y), out var featureList) && featureList.Intersect(neighbors).Count() == neighbors.Count);
+                    if (isInShadow)
+                    {
+                        foreach (var neighbor in neighbors)
+                        {
+                            var neighborVector = new Vector2(neighbor.x, neighbor.y);
+                            coveredByDict[neighborVector].Remove(waterableTile);
+                        }
+                        neighborDict.Remove(waterableVector);
+                    }
+                }
+                // 3. Pick all groups with uniques
+                foreach (var cover in coveredByDict)
+                {
+                    if (cover.Value.Count == 1)
+                    {
+                        var group = cover.Value[0];
+                        var waterableVector = new Vector2(group.x, group.y);
+                        var neighbors = neighborDict[waterableVector];
+                        groups.Add(group, neighbors);
+                        foreach (var neighbor in neighbors)
+                        {
+                            coveredByDict.Remove(new Vector2(neighbor.x, neighbor.y));
+                        }
+                        neighborDict.Remove(waterableVector);
+                    }
+                }
+            }
+            return groups.Select((pair, i) => new Group(i, pair.Key, pair.Value)).ToList();
+        }
+
+        /// <summary>
+        /// Find all groupings of waterable tiles
         /// </summary>
         /// 
         /// <param name="console">Function for printing to debug console.</param>
-        public void findGroupings(console console)
+        public List<Group> findGroupings(console console)
         {
-            this.groupings = new List<Group>();
+            var groupings = new List<Group>();
 
             foreach (Tile tile in this.waterableTiles)
             {
@@ -225,7 +299,7 @@ namespace WaterBot.Framework
                     continue;
                 }
 
-                int index = this.groupings.Count;
+                int index = groupings.Count;
 
                 if (tile.x <= this.width - 1)
                 {
@@ -235,7 +309,7 @@ namespace WaterBot.Framework
                         grouped = true;
                         Group group = new Group(index);
                         this.populateGroup(group, tile);
-                        this.groupings.Add(group);
+                        groupings.Add(group);
                     }
                 }
                 if (tile.y <= this.height - 1 && !grouped)
@@ -246,7 +320,7 @@ namespace WaterBot.Framework
                         grouped = true;
                         Group group = new Group(index);
                         this.populateGroup(group, tile);
-                        this.groupings.Add(group);
+                        groupings.Add(group);
                     }
                 }
                 if (!grouped)
@@ -256,9 +330,10 @@ namespace WaterBot.Framework
                     solo.Add(tile);
                     tile.visited = true;
 
-                    this.groupings.Add(solo);
+                    groupings.Add(solo);
                 }
             }
+            return groupings;
         }
 
         /// <summary>
@@ -324,8 +399,7 @@ namespace WaterBot.Framework
                 }
             }
 
-            List<Tile> queue = new List<Tile>();
-            queue.Add(center);
+            List<Tile> queue = new() { center };
 
             while (queue.Count > 0)
             {
@@ -344,13 +418,13 @@ namespace WaterBot.Framework
                     return current;
                 } else
                 {
-                    foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions.Concat(this.diagonals))
+                    foreach (var direction in this.directions.Concat(this.diagonals))
                     {
-                        if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                        if (direction.IsInBounds(current.y + direction.Y, current.x + direction.X))
                         {
-                            if (!this.map[current.y + direction.Item1][current.x + direction.Item2].walkableCheck)
+                            if (!this.map[current.y + direction.Y][current.x + direction.X].walkableCheck)
                             {
-                                queue.Add(this.map[current.y + direction.Item1][current.x + direction.Item2]);
+                                queue.Add(this.map[current.y + direction.Y][current.x + direction.X]);
                             }
                         }
                     }
@@ -448,17 +522,17 @@ namespace WaterBot.Framework
         /// </summary>
         /// 
         /// <param name="console">Function for printing to debug console.</param>
-        public int[,] generateCostMatrix(console console)
+        public int[,] generateCostMatrix(console console, List<Group> groupings)
         {
-            foreach (Group group in this.groupings)
+            foreach (Group group in groupings)
             {
                 if (group.Count() == 0)
                 {
-                    this.groupings.Remove(group);
+                    groupings.Remove(group);
                 }
             }
 
-            int nodes = this.groupings.Count + 1;
+            int nodes = groupings.Count + 1;
 
             int[,] costMatrix = new int[nodes, nodes];
 
@@ -481,7 +555,7 @@ namespace WaterBot.Framework
                         else if (j == 0 || i == 0)
                         {
                             Point start = new Point(Game1.player.TilePoint.X, Game1.player.TilePoint.Y);
-                            Point end = this.groupings[i == 0 ? j - 1 : i - 1].Centroid(this);
+                            Point end = groupings[i == 0 ? j - 1 : i - 1].Centroid(this);
 
                             Tuple<List<Tile>, int> path = this.walkablePathBetweenPoints(console, start, end);
 
@@ -489,8 +563,8 @@ namespace WaterBot.Framework
                         }
                         else
                         {
-                            Point start = this.groupings[i - 1].Centroid(this);
-                            Point end = this.groupings[j - 1].Centroid(this);
+                            Point start = groupings[i - 1].Centroid(this);
+                            Point end = groupings[j - 1].Centroid(this);
 
                             Tuple<List<Tile>, int> path = this.walkablePathBetweenPoints(console, start, end);
 
@@ -519,7 +593,7 @@ namespace WaterBot.Framework
 
             for (int i = deleteGroups.Count - 1; i >= 0; i--)
             {
-                this.groupings.RemoveAt(deleteGroups[i] - 1);
+                groupings.RemoveAt(deleteGroups[i] - 1);
             }
 
             int[,] reachableCostMatrix = new int[safeGroups.Count, safeGroups.Count];
@@ -541,27 +615,26 @@ namespace WaterBot.Framework
         /// </summary>
         /// 
         /// <param name="console">Function for printing to debug console.</param>
-        public List<Group> findGroupPath(console console)
+        public List<Group> findGroupPath(console console, List<Group> groupings)
         {
             try
             {
-                if (this.groupings.Count == 1)
+                if (groupings.Count == 1)
                 {
-                    return this.groupings;
+                    return groupings;
                 }
 
                 List<Group> path = new List<Group>();
 
-                int[,] costMatrix = this.generateCostMatrix(console);
+                int[,] costMatrix = this.generateCostMatrix(console, groupings);
 
                 int counter = 0;
                 int j = 0;
                 int i = 0;
                 int min = int.MaxValue;
 
-                List<int> visitedRouteList = new List<int>();
+                List<int> visitedRouteList = new() { 0 };
 
-                visitedRouteList.Add(0);
                 int[] route = new int[costMatrix.Length];
 
                 while (i < costMatrix.GetLength(0) && j < costMatrix.GetLength(1))
@@ -596,7 +669,7 @@ namespace WaterBot.Framework
                 {
                     if (index != 0)
                     {
-                        path.Add(this.groupings[index - 1]);
+                        path.Add(groupings[index - 1]);
                     }
                 }
 
@@ -604,11 +677,11 @@ namespace WaterBot.Framework
             } catch (IndexOutOfRangeException e)
             {
                 console("WaterBot encountered an error and will return a sub-optimal path.");
-                return this.groupings;
+                return groupings;
             } catch (Exception e)
             {
                 console("WaterBot encountered an unknown error and will return a sub-optimal path.");
-                return this.groupings;
+                return groupings;
             }
         }
 
@@ -619,6 +692,10 @@ namespace WaterBot.Framework
         /// <param name="group">Group of crops to find path through.</param>
         public List<ActionableTile> findFillPath(Group group, console console)
         {
+            if (group.center is not null)
+            {
+                return new List<ActionableTile> { new ActionableTile(group.center.getPoint(), group.getList().Select(x => x.getPoint()).ToList(), ActionableTile.Action.Water) };
+            }
             // Start a new path of actionable tiles
             // Actionable tiles are a standing place, and nearby tiles to water
             List<ActionableTile> path = new List<ActionableTile>();
@@ -651,11 +728,11 @@ namespace WaterBot.Framework
                     {
                         current.visited = true;
 
-                        foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
+                        foreach (var direction in this.directions)
                         {
-                            if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                            if (direction.IsInBounds(current.y + direction.Y, current.x + direction.X))
                             {
-                                Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
+                                Tile neighbor = this.map[current.y + direction.Y][current.x + direction.X];
                                 if (!neighbor.visited && group.Contains(neighbor))
                                 {
                                     stack.Add(neighbor);
@@ -675,11 +752,11 @@ namespace WaterBot.Framework
                             Tile bestOption = this.map[current.y][current.x];
 
                             // If you can stand on adjacents, do it.
-                            foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions.Concat(this.diagonals))
+                            foreach (var direction in this.directions.Concat(this.diagonals))
                             {
-                                if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                                if (direction.IsInBounds(current.y + direction.Y, current.x + direction.X))
                                 {
-                                    Tile neighbor = this.map[current.y + direction.Item1][current.x + direction.Item2];
+                                    Tile neighbor = this.map[current.y + direction.Y][current.x + direction.X];
                                     if (neighbor.block)
                                     {
                                         continue;
@@ -726,11 +803,11 @@ namespace WaterBot.Framework
                         }
 
                         // If you can water adjacents, do it.
-                        foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
+                        foreach (var direction in this.directions)
                         {
-                            if (direction.Item3(actionable.getStand().Y + direction.Item1, actionable.getStand().X + direction.Item2))
+                            if (direction.IsInBounds(actionable.getStand().Y + direction.Y, actionable.getStand().X + direction.X))
                             {
-                                Tile neighbor = this.map[actionable.getStand().Y + direction.Item1][actionable.getStand().X + direction.Item2];
+                                Tile neighbor = this.map[actionable.getStand().Y + direction.Y][actionable.getStand().X + direction.X];
                                 if (neighbor.waterable && !neighbor.watered)
                                 {
                                     actionable.pushExecuteOn(neighbor.getPoint());
@@ -744,11 +821,11 @@ namespace WaterBot.Framework
                         }
 
                         // If you can water diagonals, do it.
-                        foreach (Tuple<int, int, Func<int, int, bool>> direction in this.diagonals)
+                        foreach (var direction in this.diagonals)
                         {
-                            if (direction.Item3(actionable.getStand().Y + direction.Item1, actionable.getStand().X + direction.Item2))
+                            if (direction.IsInBounds(actionable.getStand().Y + direction.Y, actionable.getStand().X + direction.X))
                             {
-                                Tile neighbor = this.map[actionable.getStand().Y + direction.Item1][actionable.getStand().X + direction.Item2];
+                                Tile neighbor = this.map[actionable.getStand().Y + direction.Y][actionable.getStand().X + direction.X];
                                 if (neighbor.waterable && !neighbor.watered)
                                 {
                                     actionable.pushExecuteOn(neighbor.getPoint());
@@ -788,8 +865,7 @@ namespace WaterBot.Framework
                 }
             }
 
-            List<Tuple<Tile, Tile>> queue = new List<Tuple<Tile, Tile>>(); // Current, Last
-            queue.Add(new Tuple<Tile, Tile>(start, null!));
+            List<Tuple<Tile, Tile>> queue = new() { new (start, null!) }; // Current, Last
 
             Tile? current = null;
             Tile? last = null;
@@ -809,8 +885,7 @@ namespace WaterBot.Framework
 
                 if (current.water)
                 {
-                    List<Point> actions = new List<Point>();
-                    actions.Add(current.getPoint());
+                    List<Point> actions = new() { current.getPoint() };
 
                     if (current.block)
                     {
@@ -827,13 +902,14 @@ namespace WaterBot.Framework
                     continue;
                 }
 
-                foreach (Tuple<int, int, Func<int, int, bool>> direction in this.directions)
+                foreach (var direction in this.directions)
                 {
-                    if (direction.Item3(current.y + direction.Item1, current.x + direction.Item2))
+                    if (direction.IsInBounds(current.y + direction.Y, current.x + direction.X))
                     {
-                        if (!this.map[current.y + direction.Item1][current.x + direction.Item2].block || this.map[current.y + direction.Item1][current.x + direction.Item2].water)
+                        var cell = this.map[current.y + direction.Y][current.x + direction.X];
+                        if (!cell.waterCheck && (!cell.block || cell.water))
                         {
-                            queue.Add(new Tuple<Tile, Tile>(this.map[current.y + direction.Item1][current.x + direction.Item2], current));
+                            queue.Add(new Tuple<Tile, Tile>(cell, current));
                         }
                     }
                 }

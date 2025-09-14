@@ -11,11 +11,19 @@ namespace WaterBot.Framework
     {
         private List<Tile> list;
         public int index;
+        public Tile? center;
 
         public Group(int index)
         {
             this.index = index;
             this.list = new List<Tile>();
+            this.center = null;
+        }
+        public Group(int index, Tile center, List<Tile> list)
+        {
+            this.index = index;
+            this.list = list;
+            this.center = center;
         }
 
         public List<Tile> getList()
@@ -54,6 +62,10 @@ namespace WaterBot.Framework
         /// </summary>
         public Point Centroid(Map map)
         {
+            if (center is not null)
+            {
+                return center.getPoint();   
+            }
             int sumOfX = 0;
             int sumOfY = 0;
 

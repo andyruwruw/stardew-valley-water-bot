@@ -3,5 +3,13 @@
   "process.end": "Finished Watering",
   "process.interrupt": "Stopped Watering",
   "process.exhausted": "Tired of Watering",
-  "process.waterless": "Could not Find Water!"
+  "process.waterless": "Could not Find Water!",
+  "config.use_small_grouping.name": "Use small grouping",
+  "config.use_small_grouping.desc": "Changes how the watering is done",
+  "config.refill_on_finish.name": "Refill on finish",
+  "config.refill_on_finish.desc": "Refill on finish",
+  "config.refill_if_lower.name": "Refill if lower",
+  "config.refill_if_lower.desc": "On refill after completion, it only refills if remaining percentage is less",
+  "config.redo_path_on_refill.name": "Redo path on refill",
+  "config.redo_path_on_refill.desc": "When refilling the pathfinding is calculated again"
 }

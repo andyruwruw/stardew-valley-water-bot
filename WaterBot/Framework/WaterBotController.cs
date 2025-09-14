@@ -3,14 +3,13 @@ using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Tools;
 using StardewValley.Pathfinding;
-using System.Threading.Tasks;
 
 namespace WaterBot.Framework
 {
     /// <summary>
     /// Defines the process of the Bot being active.
     /// </summary>
-    class WaterBotControler
+    class WaterBotController
     {
         private readonly IModHelper helper;
         public bool active;
@@ -22,7 +21,7 @@ namespace WaterBot.Framework
         private ActionableTile? refillStation;
         public console? console;
 
-        public WaterBotControler(IModHelper helper)
+        public WaterBotController(IModHelper helper)
         {
             this.helper = helper;
             this.active = false;
@@ -36,7 +35,7 @@ namespace WaterBot.Framework
         /// </summary>
         /// 
         /// <param name="console">Function for printing to debug console.</param>
-        public void start(console console)
+        public void start(console console, bool showMessage = true)
         {
             this.console = console;
             this.active = true;
@@ -47,14 +46,22 @@ namespace WaterBot.Framework
             if (!this.active) return;
 
             // Group waterable tiles
-            this.map.findGroupings(this.console);
+            List<Group> groupings;
+            if (WaterBot.config.UseSmallGrouping)
+            {
+                groupings = this.map.getMinimalCoverGroups();
+            }
+            else
+            {
+                groupings = this.map.findGroupings(this.console);
+            }
 
             if (!this.active) return;
 
             this.currentGroup = 0;
             this.currentTile = 0;
 
-            this.path = this.map.findGroupPath(this.console);
+            this.path = this.map.findGroupPath(this.console, groupings);
 
             if (path.Count == 0)
             {
@@ -62,7 +69,10 @@ namespace WaterBot.Framework
                 return;
             }
 
-            this.displayMessage(this.helper.Translation.Get("process.start"), 2);
+            if (showMessage)
+            {
+                this.displayMessage(this.helper.Translation.Get("process.start"), 2);
+            }
 
             if (!this.active) return;
 
@@ -204,6 +214,11 @@ namespace WaterBot.Framework
 
                 if (this.currentGroup >= this.path.Count)
                 {
+                    if (WaterBot.config.RefillOnFinish && WaterBot.config.RefillIfLower * 0.01 > (float)((WateringCan)Game1.player.CurrentTool).WaterLeft / (float)((WateringCan)Game1.player.CurrentTool).waterCanMax)
+                    {
+                        this.refillWater();
+                        return;
+                    }
                     this.end();
                     return;
                 }
@@ -274,7 +289,16 @@ namespace WaterBot.Framework
             if (point.X != -1)
             {
                 this.water(point);
-                Task.Delay(800).ContinueWith(o => { this.navigateNoUpdate(); });
+                Task.Delay(800).ContinueWith(o => {
+                    if (WaterBot.config.RedoPathOnRefill)
+                    {
+                        this.start(console, false);
+                    }
+                    else
+                    {
+                        this.navigateNoUpdate();
+                    }
+                });
             }
         }
 

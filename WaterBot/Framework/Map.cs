@@ -249,9 +249,10 @@ namespace WaterBot.Framework
                 {
                     var waterableVector = new Vector2(waterableTile.x, waterableTile.y);
                     var isInPlay = neighborDict.TryGetValue(waterableVector, out var neighbors);
+                    neighbors = neighbors?.Where(x => !groups.Any(y => y.Value.Contains(x))).ToList();
                     if (!isInPlay || neighbors!.Count == 9) continue;
                     var isInShadow = neighbors.Any(neighbor => neighbor != waterableTile && neighborDict.TryGetValue(new Vector2(neighbor.x, neighbor.y), out var featureList) && featureList.Intersect(neighbors).Count() == neighbors.Count);
-                    if (isInShadow)
+                    if (isInShadow || neighbors.Count == 0)
                     {
                         foreach (var neighbor in neighbors)
                         {
@@ -264,16 +265,14 @@ namespace WaterBot.Framework
                 // 3. Pick all groups with uniques
                 foreach (var cover in coveredByDict)
                 {
-                    if (cover.Value.Count == 1)
+                    if (cover.Value.Count == 1 && !neighborDict.ContainsKey(cover.Key))
                     {
                         var group = cover.Value[0];
                         var waterableVector = new Vector2(group.x, group.y);
-                        var neighbors = neighborDict[waterableVector];
+                        var isInPlay = neighborDict.TryGetValue(waterableVector, out var neighbors);
+                        neighbors = neighbors?.Where(x => !groups.Any(y => y.Value.Contains(x))).ToList();
+                        if (!isInPlay || neighbors.Count == 0) continue;
                         groups.Add(group, neighbors);
-                        foreach (var neighbor in neighbors)
-                        {
-                            coveredByDict.Remove(new Vector2(neighbor.x, neighbor.y));
-                        }
                         neighborDict.Remove(waterableVector);
                     }
                 }

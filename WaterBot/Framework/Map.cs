@@ -241,43 +241,81 @@ namespace WaterBot.Framework
             foreach (var tile in lonelyTiles)
             {
                 groups.Add(tile, new() { tile });
+                neighborDict.Remove(new Vector2(tile.x, tile.y));
             }
-            while (neighborDict.Count > lonelyTiles.Length)
+            while (neighborDict.Count > 0)
             {
                 // 2.  Remove shadowed groups
-                foreach (var waterableTile in waterableTiles)
+                var freedUpList = new List<Vector2>();
+                foreach (var tilePair in neighborDict)
                 {
-                    var waterableVector = new Vector2(waterableTile.x, waterableTile.y);
-                    var isInPlay = neighborDict.TryGetValue(waterableVector, out var neighbors);
-                    neighbors = neighbors?.Where(x => !groups.Any(y => y.Value.Contains(x))).ToList();
-                    if (!isInPlay || neighbors!.Count == 9) continue;
-                    var isInShadow = neighbors.Any(neighbor => neighbor != waterableTile && neighborDict.TryGetValue(new Vector2(neighbor.x, neighbor.y), out var featureList) && featureList.Intersect(neighbors).Count() == neighbors.Count);
+                    var tileVector = tilePair.Key;
+                    var neighbors = tilePair.Value;
+                    if (neighbors!.Count == 9) continue;
+                    var tile = neighbors.Find(neighbor => new Vector2(neighbor.x, neighbor.y) == tileVector);
+                    var isInShadow = neighbors.Any(neighbor => neighbor != tile && neighborDict.TryGetValue(new Vector2(neighbor.x, neighbor.y), out var featureList) && featureList.Intersect(neighbors).Count() == neighbors.Count);
                     if (isInShadow || neighbors.Count == 0)
                     {
                         foreach (var neighbor in neighbors)
                         {
                             var neighborVector = new Vector2(neighbor.x, neighbor.y);
-                            coveredByDict[neighborVector].Remove(waterableTile);
+                            coveredByDict[neighborVector].Remove(tile);
                         }
-                        neighborDict.Remove(waterableVector);
+                        freedUpList.Add(tileVector);
+                        neighborDict.Remove(tileVector);
                     }
                 }
                 // 3. Pick all groups with uniques
-                foreach (var cover in coveredByDict)
+                var currentGroupCount = groups.Count;
+                pickUniques(groups, freedUpList);
+
+                // 4. Prevent stalemate
+                if (currentGroupCount == groups.Count)
                 {
-                    if (cover.Value.Count == 1 && !neighborDict.ContainsKey(cover.Key))
+                    pickUniques(groups, freedUpList, 2);
+                    if (currentGroupCount == groups.Count) break; // Should not be necessary
+                }
+            }
+            return groups.Select((pair, i) => new Group(i, pair.Key, pair.Value)).ToList();
+        }
+
+        private void pickUniques(Dictionary<Tile, List<Tile>> groups, List<Vector2> freedUpList, int threshold = 1)
+        {
+            foreach (var freedUp in freedUpList)
+            {
+                var foundCover = coveredByDict.TryGetValue(freedUp, out var covers);
+                if (foundCover && covers.Count == threshold && !neighborDict.ContainsKey(freedUp))
+                {
+                    foreach (var groupCenter in covers)
                     {
-                        var group = cover.Value[0];
-                        var waterableVector = new Vector2(group.x, group.y);
+                        var waterableVector = new Vector2(groupCenter.x, groupCenter.y);
                         var isInPlay = neighborDict.TryGetValue(waterableVector, out var neighbors);
-                        neighbors = neighbors?.Where(x => !groups.Any(y => y.Value.Contains(x))).ToList();
                         if (!isInPlay || neighbors.Count == 0) continue;
-                        groups.Add(group, neighbors);
+                        removeAllAsNeighbors(neighbors);
+                        groups.Add(groupCenter, neighbors);
                         neighborDict.Remove(waterableVector);
                     }
                 }
             }
-            return groups.Select((pair, i) => new Group(i, pair.Key, pair.Value)).ToList();
+        }
+
+
+        private void removeAllAsNeighbors(List<Tile> tiles)
+        {
+            foreach (var tile in tiles)
+            {
+                var waterableVector = new Vector2(tile.x, tile.y);
+                if (coveredByDict.TryGetValue(waterableVector, out var coverteeList))
+                {
+                    foreach (var covertee in coverteeList)
+                    {
+                        if (neighborDict.TryGetValue(new Vector2(covertee.x, covertee.y), out var coverteeNeighbors))
+                        {
+                            neighborDict[new Vector2(covertee.x, covertee.y)] = coverteeNeighbors.Where(x => x != tile).ToList();
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>

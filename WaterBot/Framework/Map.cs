@@ -241,7 +241,7 @@ namespace WaterBot.Framework
             foreach (var tile in lonelyTiles)
             {
                 groups.Add(tile, new() { tile });
-                neighborDict[new Vector2(tile.x, tile.y)].Remove(tile);
+                neighborDict.Remove(new Vector2(tile.x, tile.y));
             }
             while (neighborDict.Count > 0)
             {

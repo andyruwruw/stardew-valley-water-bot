@@ -33,7 +33,7 @@ namespace WaterBot.Framework
         /// <summary>
         /// Starts the bot up.
         /// </summary>
-        /// 
+        ///
         /// <param name="console">Function for printing to debug console.</param>
         public void start(console console, bool showMessage = true)
         {
@@ -80,7 +80,13 @@ namespace WaterBot.Framework
 
             if (!this.active) return;
 
-            if (((WateringCan)Game1.player.CurrentTool).WaterLeft <= 0)
+            WateringCan? wateringCan = this.getCurrentWateringCanOrStop();
+            if (wateringCan == null)
+            {
+                return;
+            }
+
+            if (wateringCan.WaterLeft <= 0)
             {
                 this.refillWater();
                 return;
@@ -92,7 +98,7 @@ namespace WaterBot.Framework
         /// <summary>
         /// Begins the process of watering current actionable tile
         /// </summary>
-        /// 
+        ///
         /// <param name="c">Character object of player.</param>
         /// <param name="location">Location of character.</param>
         public void startWatering(Character c, GameLocation location)
@@ -107,7 +113,13 @@ namespace WaterBot.Framework
                 return;
             }
 
-            if (((WateringCan)Game1.player.CurrentTool).WaterLeft <= 0)
+            WateringCan? wateringCan = this.getCurrentWateringCanOrStop();
+            if (wateringCan == null)
+            {
+                return;
+            }
+
+            if (wateringCan.WaterLeft <= 0)
             {
                 this.refillWater();
                 return;
@@ -129,10 +141,16 @@ namespace WaterBot.Framework
         /// <summary>
         /// Waters a tile
         /// </summary>
-        /// 
+        ///
         /// <param name="tile">Tile to water.</param>
         public void water(Point tile)
         {
+            WateringCan? wateringCan = this.getCurrentWateringCanOrStop();
+            if (wateringCan == null)
+            {
+                return;
+            }
+
             if (Game1.player.TilePoint.Y > tile.Y)
             {
                 Game1.player.FacingDirection = 0;
@@ -172,7 +190,7 @@ namespace WaterBot.Framework
                 Game1.player.lastClick = Game1.player.GetToolLocation();
             }
 
-            if (((WateringCan)Game1.player.CurrentTool).WaterLeft > 0 && Game1.player.ShouldHandleAnimationSound())
+            if (wateringCan.WaterLeft > 0 && Game1.player.ShouldHandleAnimationSound())
             {
                 Game1.player.currentLocation.localSound("wateringCan");
             }
@@ -214,7 +232,13 @@ namespace WaterBot.Framework
 
                 if (this.currentGroup >= this.path.Count)
                 {
-                    if (WaterBot.config.RefillOnFinish && WaterBot.config.RefillIfLower * 0.01 > (float)((WateringCan)Game1.player.CurrentTool).WaterLeft / (float)((WateringCan)Game1.player.CurrentTool).waterCanMax)
+                    WateringCan? wateringCan = this.getCurrentWateringCanOrStop();
+                    if (wateringCan == null)
+                    {
+                        return;
+                    }
+
+                    if (WaterBot.config.RefillOnFinish && WaterBot.config.RefillIfLower * 0.01 > (float)wateringCan.WaterLeft / (float)wateringCan.waterCanMax)
                     {
                         this.refillWater();
                         return;
@@ -302,6 +326,22 @@ namespace WaterBot.Framework
             }
         }
 
+        private WateringCan? getCurrentWateringCanOrStop()
+        {
+            if (Game1.player?.CurrentTool is WateringCan wateringCan)
+            {
+                return wateringCan;
+            }
+
+            if (this.active)
+            {
+                this.console?.Invoke("Bot interrupted because current tool changed. Ending process.");
+                this.stop();
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Cancels the bot's progress.
         /// </summary>
@@ -348,7 +388,7 @@ namespace WaterBot.Framework
         /// <summary>
         /// Displays banner message.
         /// </summary>
-        /// 
+        ///
         /// <param name="message">Banner text.</param>
         /// <param name="type">Banner type.</param>
         public void displayMessage(string message, int type)

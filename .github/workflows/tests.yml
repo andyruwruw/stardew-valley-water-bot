@@ -1,0 +1,29 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            6.0.x
+            8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore WaterBot.Tests/WaterBot.Tests.csproj
+
+      - name: Build tests
+        run: dotnet build WaterBot.Tests/WaterBot.Tests.csproj --no-restore
+
+      - name: Run tests
+        run: dotnet test WaterBot.Tests/WaterBot.Tests.csproj --no-build --verbosity normal

@@ -10,4 +10,8 @@
       <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
     </ItemGroup>
 
+    <ItemGroup>
+      <InternalsVisibleTo Include="WaterBot.Tests" />
+    </ItemGroup>
+
 </Project>

@@ -2,15 +2,44 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaterBot", "WaterBot\WaterBot.csproj", "{1EF93A89-9913-4385-A695-B1E5CB72A9E4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaterBot.Tests", "WaterBot.Tests\WaterBot.Tests.csproj", "{D984A265-95F1-4574-B95A-077B0EDEA28F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{1EF93A89-9913-4385-A695-B1E5CB72A9E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1EF93A89-9913-4385-A695-B1E5CB72A9E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1EF93A89-9913-4385-A695-B1E5CB72A9E4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1EF93A89-9913-4385-A695-B1E5CB72A9E4}.Debug|x64.Build.0 = Debug|Any CPU
+		{1EF93A89-9913-4385-A695-B1E5CB72A9E4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1EF93A89-9913-4385-A695-B1E5CB72A9E4}.Debug|x86.Build.0 = Debug|Any CPU
 		{1EF93A89-9913-4385-A695-B1E5CB72A9E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1EF93A89-9913-4385-A695-B1E5CB72A9E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1EF93A89-9913-4385-A695-B1E5CB72A9E4}.Release|x64.ActiveCfg = Release|Any CPU
+		{1EF93A89-9913-4385-A695-B1E5CB72A9E4}.Release|x64.Build.0 = Release|Any CPU
+		{1EF93A89-9913-4385-A695-B1E5CB72A9E4}.Release|x86.ActiveCfg = Release|Any CPU
+		{1EF93A89-9913-4385-A695-B1E5CB72A9E4}.Release|x86.Build.0 = Release|Any CPU
+		{D984A265-95F1-4574-B95A-077B0EDEA28F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D984A265-95F1-4574-B95A-077B0EDEA28F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D984A265-95F1-4574-B95A-077B0EDEA28F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D984A265-95F1-4574-B95A-077B0EDEA28F}.Debug|x64.Build.0 = Debug|Any CPU
+		{D984A265-95F1-4574-B95A-077B0EDEA28F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D984A265-95F1-4574-B95A-077B0EDEA28F}.Debug|x86.Build.0 = Debug|Any CPU
+		{D984A265-95F1-4574-B95A-077B0EDEA28F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D984A265-95F1-4574-B95A-077B0EDEA28F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D984A265-95F1-4574-B95A-077B0EDEA28F}.Release|x64.ActiveCfg = Release|Any CPU
+		{D984A265-95F1-4574-B95A-077B0EDEA28F}.Release|x64.Build.0 = Release|Any CPU
+		{D984A265-95F1-4574-B95A-077B0EDEA28F}.Release|x86.ActiveCfg = Release|Any CPU
+		{D984A265-95F1-4574-B95A-077B0EDEA28F}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

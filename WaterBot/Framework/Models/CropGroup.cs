@@ -34,11 +34,20 @@ internal sealed class CropGroup
     /// <summary>Whether the group contains a tile at the given position. O(1).</summary>
     public bool Contains(Point position) => _positions.Contains(position);
 
-    /// <summary>Find the tile in this group nearest to the given position (Euclidean).</summary>
+    /// <summary>
+    /// Find the tile in this group nearest to the given position using squared
+    /// Euclidean distance (avoids <see cref="Math.Sqrt"/>).
+    /// </summary>
+    /// <param name="target">The reference point to measure distance from.</param>
+    /// <returns>The nearest tile in the group.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the group has no tiles.</exception>
     public TileInfo FindClosestTile(Point target)
     {
-        TileInfo? best = null;
-        var bestDistSq = double.MaxValue;
+        if (_tiles.Count == 0)
+            throw new InvalidOperationException("Cannot find closest tile in an empty group.");
+
+        TileInfo best = _tiles[0];
+        double bestDistSq = double.MaxValue;
 
         foreach (var tile in _tiles)
         {
@@ -53,7 +62,7 @@ internal sealed class CropGroup
             }
         }
 
-        return best!;
+        return best;
     }
 
     /// <summary>Compute the centroid as the tile in the list closest to the average position.</summary>

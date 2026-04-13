@@ -7,6 +7,8 @@
 - Fixed threading violation, fixing race condition that would lead to missed waterings, animation glitches and crashes.
 - Fixed collection mutations during iteration during group pathing.
 - Fixed potential memory overflow during DFS.
+- Fixed pathfinding failure handling.
+- STuck detection added.
 - Focused search on terrainFeatures versus every tile.
 - Protected against location change and tool change.
 - Generally cleaned up the repository (wrote this so long ago)

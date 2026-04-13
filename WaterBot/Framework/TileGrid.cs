@@ -177,7 +177,9 @@ internal sealed class TileGrid : ITileGrid
         var tile = new TileInfo(x, y, isBlocked, isWaterSource, needsWatering);
         _tiles[new Point(x, y)] = tile;
 
-        // If we discovered an unwatered crop via neighbor scan that wasn't in the initial pass, add it
+        // If we discovered an unwatered crop via neighbor scan that wasn't in the initial pass, add it.
+        // List.Contains uses TileInfo.Equals (value equality on X, Y) so this correctly detects duplicates
+        // even though `tile` is a newly created object.
         if (needsWatering && !CropTiles.Contains(tile))
             CropTiles.Add(tile);
 

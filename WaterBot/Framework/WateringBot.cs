@@ -14,13 +14,20 @@ namespace WaterBot.Framework;
 /// </summary>
 internal sealed class WateringBot
 {
+    /// <summary>The possible states of the watering bot's lifecycle.</summary>
     private enum BotState
     {
+        /// <summary>Bot is not running. Waiting for user trigger.</summary>
         Idle,
+        /// <summary>Farmer is walking toward the next watering action's standing position.</summary>
         Walking,
+        /// <summary>Farmer is at the standing position and processing watering targets.</summary>
         Watering,
+        /// <summary>Watering animation is playing; waiting for the tick delay to elapse.</summary>
         WaitingForAnimation,
+        /// <summary>Farmer is walking toward a water source to refill the can.</summary>
         Refilling,
+        /// <summary>Refill animation is playing; waiting for the tick delay to elapse.</summary>
         WaitingAfterRefill
     }
 
@@ -38,9 +45,14 @@ internal sealed class WateringBot
     private int _delayTicksRemaining;
     private WateringAction? _refillAction;
 
-    /// <summary>Whether the bot is currently running.</summary>
+    /// <summary>Whether the bot is currently running (any state other than Idle).</summary>
     public bool IsActive => _state != BotState.Idle;
 
+    /// <summary>
+    /// Create a new WateringBot and subscribe to SMAPI events.
+    /// </summary>
+    /// <param name="helper">SMAPI mod helper for event registration and translations.</param>
+    /// <param name="config">Mod configuration (injected, not static).</param>
     public WateringBot(IModHelper helper, ModConfig config)
     {
         _helper = helper;
@@ -50,13 +62,16 @@ internal sealed class WateringBot
         helper.Events.Player.Warped += OnWarped;
     }
 
-    /// <summary>Start the watering bot from the player's current position.</summary>
+    /// <summary>
+    /// Start the watering bot from the player's current position.
+    /// Scans the map for crops, groups them, plans an optimal route, and begins
+    /// walking to the first watering position. Does nothing if no crops need watering.
+    /// </summary>
     public void Start()
     {
         var location = Game1.currentLocation;
         var player = Game1.player;
 
-        // Load and analyze the map
         _grid.Load(location);
 
         if (_grid.CropTiles.Count == 0)
@@ -65,7 +80,6 @@ internal sealed class WateringBot
             return;
         }
 
-        // Group crops
         var groups = _config.UseSmallGrouping
             ? CropGrouper.GroupByMinimalCover(_grid.CropTiles, _grid)
             : CropGrouper.GroupByAdjacency(_grid.CropTiles, _grid);
@@ -76,11 +90,9 @@ internal sealed class WateringBot
             return;
         }
 
-        // Order groups by nearest-neighbor
         _groupRoute = RoutePlanner.OrderGroups(groups, player.TilePoint);
         _currentGroupIndex = 0;
 
-        // Plan watering path for first group
         _currentActions = RoutePlanner.PlanWateringPath(_groupRoute[0], player.TilePoint, _grid);
         _currentActionIndex = 0;
 
@@ -94,7 +106,6 @@ internal sealed class WateringBot
         ShowMessage("process.start", HUDMessage.newQuest_type);
         Logger.Info("WateringBot: started.");
 
-        // Check if we need to refill before starting
         if (GetWateringCan() is WateringCan can && can.WaterLeft <= 0)
         {
             BeginRefill();
@@ -104,7 +115,10 @@ internal sealed class WateringBot
         WalkToCurrentAction();
     }
 
-    /// <summary>Stop the bot immediately (user interrupt).</summary>
+    /// <summary>
+    /// Stop the bot immediately in response to a user interrupt (any button press).
+    /// Halts farmer movement and displays an interruption message.
+    /// </summary>
     public void Stop()
     {
         if (!IsActive) return;
@@ -115,7 +129,11 @@ internal sealed class WateringBot
         Logger.Info("WateringBot: stopped by user.");
     }
 
-    /// <summary>Called every game tick. Drives the state machine on the main thread.</summary>
+    /// <summary>
+    /// Main tick handler. Drives the state machine on the main thread each game tick.
+    /// Updates the farmer mover when walking, counts down animation delays, and
+    /// performs safety checks (world ready, tool equipped).
+    /// </summary>
     private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
     {
         if (_state == BotState.Idle)
@@ -127,7 +145,6 @@ internal sealed class WateringBot
             return;
         }
 
-        // Safety: check tool hasn't changed
         if (Game1.player.CurrentTool is not WateringCan)
         {
             ForceStop("WateringBot: tool changed, stopping.");
@@ -136,7 +153,16 @@ internal sealed class WateringBot
 
         // Drive the mover each tick when walking
         if (_state is BotState.Walking or BotState.Refilling)
+        {
             _mover.Update();
+
+            // If the mover fired an arrival callback this tick, the state machine
+            // already transitioned (e.g. to WaitingForAnimation). Don't process
+            // the switch below on the same tick — it would decrement the delay
+            // counter by 1 before the first real wait tick.
+            if (_mover.ArrivedThisTick)
+                return;
+        }
 
         switch (_state)
         {
@@ -161,14 +187,21 @@ internal sealed class WateringBot
         }
     }
 
-    /// <summary>Stop bot if player warps to another location.</summary>
+    /// <summary>
+    /// Safety handler: stop the bot if the player warps to another location,
+    /// since the map data and pathfinding are no longer valid.
+    /// </summary>
     private void OnWarped(object? sender, WarpedEventArgs e)
     {
         if (IsActive)
             ForceStop("WateringBot: player warped, stopping.");
     }
 
-    /// <summary>Callback when FarmerMover reaches its destination.</summary>
+    /// <summary>
+    /// Callback fired by <see cref="FarmerMover"/> when the farmer reaches the
+    /// destination tile. Routes to either refill handling or crop watering
+    /// depending on the current bot state.
+    /// </summary>
     private void OnArrived(Character c, GameLocation location)
     {
         if (!IsActive) return;
@@ -183,12 +216,15 @@ internal sealed class WateringBot
         ProcessCurrentAction();
     }
 
-    /// <summary>Process the next tile in the current watering action.</summary>
+    /// <summary>
+    /// Process the next tile in the current watering action. Checks stamina and water
+    /// level before each tile. When all targets in an action are done, advances to the
+    /// next action or group. Triggers the watering animation and sets a tick delay.
+    /// </summary>
     private void ProcessCurrentAction()
     {
         if (!IsActive) return;
 
-        // Stamina check
         if (Game1.player.Stamina <= 2f)
         {
             _state = BotState.Idle;
@@ -198,14 +234,12 @@ internal sealed class WateringBot
             return;
         }
 
-        // Water level check
         if (GetWateringCan() is WateringCan can && can.WaterLeft <= 0)
         {
             BeginRefill();
             return;
         }
 
-        // Get current action
         if (_currentActionIndex >= _currentActions.Count)
         {
             AdvanceToNextGroup();
@@ -223,6 +257,7 @@ internal sealed class WateringBot
         }
         else
         {
+            // All targets in this action are done — advance to next action
             _currentActionIndex++;
             if (_currentActionIndex < _currentActions.Count)
             {
@@ -236,7 +271,10 @@ internal sealed class WateringBot
         }
     }
 
-    /// <summary>Move to the next group, or finish if all groups are done.</summary>
+    /// <summary>
+    /// Advance to the next crop group in the route. Plans a new watering path for it.
+    /// If all groups are done, optionally refills and then ends the bot session.
+    /// </summary>
     private void AdvanceToNextGroup()
     {
         _currentGroupIndex++;
@@ -269,11 +307,16 @@ internal sealed class WateringBot
         }
         else
         {
+            // Empty group (all tiles unreachable) — skip to next
             AdvanceToNextGroup();
         }
     }
 
-    /// <summary>Begin walking to a water source to refill.</summary>
+    /// <summary>
+    /// Initiate a refill sequence: find the nearest water source via BFS,
+    /// then walk the farmer to its standing position. If no water source is
+    /// reachable, stops the bot with an error message.
+    /// </summary>
     private void BeginRefill()
     {
         _refillAction = WaterSourceFinder.FindNearest(Game1.player.TilePoint, _grid);
@@ -288,10 +331,21 @@ internal sealed class WateringBot
         }
 
         _state = BotState.Refilling;
-        _mover.StartPath(_refillAction.StandPosition, Game1.currentLocation, OnArrived);
+        _mover.StartPath(_refillAction.StandPosition, Game1.currentLocation, OnArrived,
+            onPathFailed: () =>
+            {
+                _state = BotState.Idle;
+                _mover.Stop();
+                ShowMessage("process.waterless", HUDMessage.error_type);
+                Logger.Warn("WateringBot: can't reach water source.");
+            });
     }
 
-    /// <summary>Perform the refill animation at the water source.</summary>
+    /// <summary>
+    /// Perform the refill animation at the water source tile.
+    /// Dequeues the refill target and triggers the watering animation
+    /// (which the game interprets as a refill when aimed at water).
+    /// </summary>
     private void PerformRefill()
     {
         if (_refillAction?.TryDequeueTarget() is Point refillTile)
@@ -306,7 +360,11 @@ internal sealed class WateringBot
         }
     }
 
-    /// <summary>After refilling, either recalculate the route or resume.</summary>
+    /// <summary>
+    /// Called after the refill animation completes. Either recalculates the entire
+    /// route (if <see cref="ModConfig.RedoPathOnRefill"/> is enabled) or resumes
+    /// the current path from where it left off.
+    /// </summary>
     private void AfterRefill()
     {
         if (_config.RedoPathOnRefill)
@@ -325,7 +383,10 @@ internal sealed class WateringBot
         }
     }
 
-    /// <summary>Walk the player to the current action's standing position.</summary>
+    /// <summary>
+    /// Start walking the farmer to the current watering action's standing position.
+    /// If there are no more actions, advances to the next group instead.
+    /// </summary>
     private void WalkToCurrentAction()
     {
         if (_currentActionIndex >= _currentActions.Count)
@@ -335,9 +396,32 @@ internal sealed class WateringBot
         }
 
         var target = _currentActions[_currentActionIndex].StandPosition;
-        _mover.StartPath(target, Game1.currentLocation, OnArrived);
+        _mover.StartPath(target, Game1.currentLocation, OnArrived, onPathFailed: OnPathFailed);
     }
 
+    /// <summary>
+    /// Called when pathfinding to a watering action fails (unreachable or stuck).
+    /// Skips the current action and tries the next one, or advances to the next group.
+    /// </summary>
+    private void OnPathFailed()
+    {
+        Logger.Warn("WateringBot: path failed, skipping to next action.");
+        _currentActionIndex++;
+        if (_currentActionIndex < _currentActions.Count)
+        {
+            WalkToCurrentAction();
+        }
+        else
+        {
+            AdvanceToNextGroup();
+        }
+    }
+
+    /// <summary>
+    /// Check whether the watering can should be refilled based on the
+    /// <see cref="ModConfig.RefillIfLower"/> threshold percentage.
+    /// </summary>
+    /// <returns>True if water level is below the configured threshold.</returns>
     private bool ShouldRefill()
     {
         if (GetWateringCan() is not WateringCan can)
@@ -347,11 +431,20 @@ internal sealed class WateringBot
         return pct < _config.RefillIfLower * 0.01f;
     }
 
+    /// <summary>
+    /// Get the player's currently equipped watering can, or null if a different tool
+    /// is selected. Uses safe cast to avoid <see cref="InvalidCastException"/>.
+    /// </summary>
     private static WateringCan? GetWateringCan()
     {
         return Game1.player.CurrentTool as WateringCan;
     }
 
+    /// <summary>
+    /// Force-stop the bot from an internal safety check (warp, tool change, world unloaded).
+    /// Does not show a user-facing message — only logs if a message is provided.
+    /// </summary>
+    /// <param name="logMessage">Optional warning message to log, or null for silent stop.</param>
     private void ForceStop(string? logMessage = null)
     {
         _state = BotState.Idle;
@@ -360,6 +453,11 @@ internal sealed class WateringBot
             Logger.Warn(logMessage);
     }
 
+    /// <summary>
+    /// Show a translated HUD banner message to the player.
+    /// </summary>
+    /// <param name="translationKey">The i18n key from default.json (e.g. "process.start").</param>
+    /// <param name="type">HUD message type constant controlling the banner style/color.</param>
     private void ShowMessage(string translationKey, int type)
     {
         string text = _helper.Translation.Get(translationKey);

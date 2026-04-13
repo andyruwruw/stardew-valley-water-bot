@@ -61,33 +61,4 @@ internal static class WaterSourceFinder
         return null;
     }
 
-    /// <summary>
-    /// Find the nearest walkable tile from a given (potentially blocked) position.
-    /// Used to find a walkable centroid when a group center is blocked.
-    /// </summary>
-    public static TileInfo? FindNearestWalkable(Point start, ITileGrid grid)
-    {
-        var visited = new HashSet<Point>();
-        var queue = new Queue<Point>();
-        queue.Enqueue(start);
-
-        while (queue.Count > 0)
-        {
-            var current = queue.Dequeue();
-            if (!visited.Add(current))
-                continue;
-
-            var tile = grid.GetOrQuery(current.X, current.Y);
-            if (!tile.IsBlocked)
-                return tile;
-
-            foreach (var neighbor in grid.GetAllNeighbors(current))
-            {
-                if (!visited.Contains(neighbor.Position))
-                    queue.Enqueue(neighbor.Position);
-            }
-        }
-
-        return null;
-    }
 }

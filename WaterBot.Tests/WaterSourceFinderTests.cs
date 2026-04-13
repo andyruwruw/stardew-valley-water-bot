@@ -97,33 +97,4 @@ public class WaterSourceFinderTests
         Assert.NotNull(result);
     }
 
-    [Fact]
-    public void FindNearestWalkable_BlockedStart_FindsWalkable()
-    {
-        var grid = new MockTileGrid(new char[,]
-        {
-            { '#', '#', '.' },
-            { '#', '#', '.' }
-        });
-
-        var result = WaterSourceFinder.FindNearestWalkable(new Point(0, 0), grid);
-
-        Assert.NotNull(result);
-        Assert.False(result.IsBlocked);
-        Assert.Equal(new Point(2, 0), result.Position);
-    }
-
-    [Fact]
-    public void FindNearestWalkable_AlreadyWalkable_ReturnsSelf()
-    {
-        var grid = new MockTileGrid(new char[,]
-        {
-            { '.', '#' }
-        });
-
-        var result = WaterSourceFinder.FindNearestWalkable(new Point(0, 0), grid);
-
-        Assert.NotNull(result);
-        Assert.Equal(new Point(0, 0), result.Position);
-    }
 }

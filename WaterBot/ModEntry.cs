@@ -83,7 +83,7 @@ public class ModEntry : Mod
 
         api.Register(
             mod: ModManifest,
-            reset: () => _config = new ModConfig(),
+            reset: _config.ResetToDefaults,
             save: () => Helper.WriteConfig(_config)
         );
 

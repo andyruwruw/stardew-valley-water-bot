@@ -32,12 +32,16 @@ public class ModEntry : Mod
 
         if (_bot.IsActive)
         {
+            Helper.Input.Suppress(e.Button);
+            if (_bot.InGracePeriod)
+                return;
             _bot.Stop();
             return;
         }
 
         if (e.Button.IsActionButton() && IsPlayerWateringCrop())
         {
+            Helper.Input.Suppress(e.Button);
             Logger.Debug("Trigger: player right-clicked crop with watering can.");
             _bot.Start();
         }

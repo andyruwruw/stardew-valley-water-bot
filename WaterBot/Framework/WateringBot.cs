@@ -42,11 +42,14 @@ internal sealed class WateringBot
     private List<WateringAction> _currentActions = new();
     private int _currentGroupIndex;
     private int _currentActionIndex;
-    private int _delayTicksRemaining;
     private WateringAction? _refillAction;
+    private int _startTick;
 
     /// <summary>Whether the bot is currently running (any state other than Idle).</summary>
     public bool IsActive => _state != BotState.Idle;
+
+    /// <summary>Whether the bot started recently enough that stop requests should be ignored.</summary>
+    public bool InGracePeriod => IsActive && Game1.ticks - _startTick < 30;
 
     /// <summary>
     /// Create a new WateringBot and subscribe to SMAPI events.
@@ -103,6 +106,7 @@ internal sealed class WateringBot
         }
 
         _state = BotState.Walking;
+        _startTick = Game1.ticks;
         ShowMessage("process.start", HUDMessage.newQuest_type);
         Logger.Info("WateringBot: started.");
 
@@ -125,6 +129,7 @@ internal sealed class WateringBot
 
         _state = BotState.Idle;
         _mover.Stop();
+        WateringAnimator.ResetFarmerState(Game1.player);
         ShowMessage("process.interrupt", HUDMessage.error_type);
         Logger.Info("WateringBot: stopped by user.");
     }
@@ -167,21 +172,15 @@ internal sealed class WateringBot
         switch (_state)
         {
             case BotState.WaitingForAnimation:
-                if (_delayTicksRemaining > 0)
-                {
-                    _delayTicksRemaining--;
+                if (!WateringAnimator.IsAnimationComplete(Game1.player))
                     return;
-                }
                 _state = BotState.Watering;
                 ProcessCurrentAction();
                 break;
 
             case BotState.WaitingAfterRefill:
-                if (_delayTicksRemaining > 0)
-                {
-                    _delayTicksRemaining--;
+                if (!WateringAnimator.IsAnimationComplete(Game1.player))
                     return;
-                }
                 AfterRefill();
                 break;
         }
@@ -229,6 +228,7 @@ internal sealed class WateringBot
         {
             _state = BotState.Idle;
             _mover.Stop();
+            WateringAnimator.ResetFarmerState(Game1.player);
             ShowMessage("process.exhausted", HUDMessage.error_type);
             Logger.Info("WateringBot: exhausted.");
             return;
@@ -251,8 +251,7 @@ internal sealed class WateringBot
 
         if (target is Point tile)
         {
-            int duration = WateringAnimator.AnimateWatering(Game1.player, tile);
-            _delayTicksRemaining = Math.Max(1, duration * 60 / 1000);
+            WateringAnimator.AnimateWatering(Game1.player, tile);
             _state = BotState.WaitingForAnimation;
         }
         else
@@ -289,6 +288,7 @@ internal sealed class WateringBot
 
             _state = BotState.Idle;
             _mover.Stop();
+            WateringAnimator.ResetFarmerState(Game1.player);
             ShowMessage("process.end", HUDMessage.achievement_type);
             Logger.Info("WateringBot: finished watering all crops.");
             return;
@@ -331,6 +331,7 @@ internal sealed class WateringBot
         }
 
         _state = BotState.Refilling;
+        WateringAnimator.ResetFarmerState(Game1.player);
         _mover.StartPath(_refillAction.StandPosition, Game1.currentLocation, OnArrived,
             onPathFailed: () =>
             {
@@ -350,8 +351,7 @@ internal sealed class WateringBot
     {
         if (_refillAction?.TryDequeueTarget() is Point refillTile)
         {
-            int duration = WateringAnimator.AnimateWatering(Game1.player, refillTile);
-            _delayTicksRemaining = Math.Max(1, duration * 60 / 1000);
+            WateringAnimator.AnimateWatering(Game1.player, refillTile);
             _state = BotState.WaitingAfterRefill;
         }
         else
@@ -395,6 +395,7 @@ internal sealed class WateringBot
             return;
         }
 
+        WateringAnimator.ResetFarmerState(Game1.player);
         var target = _currentActions[_currentActionIndex].StandPosition;
         _mover.StartPath(target, Game1.currentLocation, OnArrived, onPathFailed: OnPathFailed);
     }
@@ -449,6 +450,7 @@ internal sealed class WateringBot
     {
         _state = BotState.Idle;
         _mover.Stop();
+        WateringAnimator.ResetFarmerState(Game1.player);
         if (logMessage != null)
             Logger.Warn(logMessage);
     }

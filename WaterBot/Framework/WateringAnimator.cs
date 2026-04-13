@@ -5,60 +5,71 @@ using StardewValley.Tools;
 namespace WaterBot.Framework;
 
 /// <summary>
-/// Encapsulates the watering can animation and tool-use logic.
-/// Extracted from the old WaterBotController.water() method.
+/// Encapsulates watering can tool logic.
+/// Uses the game's real animation system (<see cref="FarmerSprite.animateOnce"/>)
+/// with <see cref="Farmer.toolOverrideFunction"/> to target exact tile coordinates
+/// while playing the full 4-frame watering animation.
 /// </summary>
 internal static class WateringAnimator
 {
+    /// <summary>Animation indices for watering by facing direction (down, right, up, left).</summary>
+    private static readonly int[] WateringAnimIndices = { 180, 172, 164, 188 };
+
     /// <summary>
-    /// Animate the player watering a target tile. Faces the target, plays the animation
-    /// and sound, and triggers the tool update so the crop actually gets watered.
+    /// Start the watering animation targeting a specific tile.
+    /// Uses <see cref="Farmer.toolOverrideFunction"/> so the animation's
+    /// <see cref="Farmer.useTool"/> callback waters the exact target tile.
+    /// The animation completes when <see cref="Farmer.canMoveNow"/> fires
+    /// (~675ms later), which sets <see cref="Farmer.UsingTool"/> to false.
     /// </summary>
-    /// <returns>The animation duration in milliseconds.</returns>
-    public static int AnimateWatering(Farmer farmer, Point targetTile)
+    public static void AnimateWatering(Farmer farmer, Point targetTile)
     {
         if (farmer.CurrentTool is not WateringCan wateringCan)
         {
             Logger.Warn("WateringAnimator: player is not holding a watering can.");
-            return 0;
+            return;
         }
 
-        // Face the target tile
         farmer.FacingDirection = GetFacingDirection(farmer.TilePoint, targetTile);
-
-        if (farmer.isEmoteAnimating)
-            farmer.EndEmoteAnimation();
-
-        // Set up tool-use state
-        farmer.FarmerSprite.SetOwner(farmer);
-        farmer.CanMove = false;
-        farmer.UsingTool = true;
-        farmer.canReleaseTool = true;
         farmer.Halt();
-        farmer.CurrentTool.Update(farmer.FacingDirection, 0, farmer);
-        farmer.stopJittering();
-        farmer.canReleaseTool = false;
+        farmer.UsingTool = true;
+        farmer.CanMove = false;
 
-        // Play watering sound
-        if (wateringCan.WaterLeft > 0 && farmer.ShouldHandleAnimationSound())
-            farmer.currentLocation.localSound("wateringCan");
-
-        // Set the click target so the tool knows which tile to affect
-        farmer.lastClick = new Vector2(targetTile.X * Game1.tileSize, targetTile.Y * Game1.tileSize);
-
-        // Trigger the sprite animation for the facing direction
-        int duration = GetAnimationDuration(farmer);
-        int animationFrame = farmer.FacingDirection switch
+        // Redirect useTool callback to water the exact target tile.
+        // The lambda clears itself after firing to avoid leaking into later tool uses.
+        int pixelX = targetTile.X * 64;
+        int pixelY = targetTile.Y * 64;
+        farmer.toolOverrideFunction = who =>
         {
-            0 => 180, // up
-            1 => 172, // right
-            2 => 164, // down
-            3 => 188, // left
-            _ => 164
+            who.toolOverrideFunction = null;
+            wateringCan.DoFunction(who.currentLocation, pixelX, pixelY, 0, who);
         };
 
-        ((FarmerSprite)farmer.Sprite).animateOnce(animationFrame, duration / 3f, 3);
-        return duration;
+        int animIndex = WateringAnimIndices[farmer.FacingDirection];
+        farmer.FarmerSprite.animateOnce(animIndex, 125f, 3);
+    }
+
+    /// <summary>
+    /// Whether the watering animation has finished playing.
+    /// <see cref="Farmer.canMoveNow"/> sets <see cref="Farmer.UsingTool"/> to false
+    /// at the end of the animation's final frame.
+    /// </summary>
+    public static bool IsAnimationComplete(Farmer farmer)
+    {
+        return !farmer.UsingTool;
+    }
+
+    /// <summary>
+    /// Reset the farmer's tool-use state so they can move freely.
+    /// Call this before starting PathFindController movement or on bot stop.
+    /// </summary>
+    public static void ResetFarmerState(Farmer farmer)
+    {
+        farmer.toolOverrideFunction = null;
+        farmer.UsingTool = false;
+        farmer.CanMove = true;
+        farmer.FarmerSprite.PauseForSingleAnimation = false;
+        farmer.forceCanMove();
     }
 
     /// <summary>
@@ -76,15 +87,5 @@ internal static class WateringAnimator
         if (dx < 0) return 3; // left
         if (dx > 0) return 1; // right
         return 2; // same tile — default down
-    }
-
-    /// <summary>
-    /// Animation duration in milliseconds. Doubled when the player has low stamina
-    /// (matching vanilla behavior where exhausted animations are slower).
-    /// </summary>
-    private static int GetAnimationDuration(Farmer farmer)
-    {
-        int multiplier = farmer.Stamina > 0f ? 1 : 2;
-        return 125 * multiplier * 3; // 375ms normal, 750ms exhausted
     }
 }

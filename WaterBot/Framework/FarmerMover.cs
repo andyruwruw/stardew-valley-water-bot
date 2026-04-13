@@ -1,41 +1,31 @@
 using Microsoft.Xna.Framework;
 using StardewValley;
+using StardewValley.Pathfinding;
+using WaterBot.Framework.Models;
 
 namespace WaterBot.Framework;
 
 /// <summary>
-/// Moves the farmer along a pre-computed waypoint path using <see cref="Farmer.setMoving(byte)"/>,
-/// which feeds into the Farmer's normal input pipeline (animations, collision, running).
-/// Replaces PathFindController to avoid jittery movement caused by per-frame direction clearing.
+/// Moves the farmer along a pre-computed path using <see cref="PathFindController"/>,
+/// the game's built-in character movement system. PathFindController manages movement
+/// directions and calls MovePosition each frame, avoiding timing issues with the
+/// game's input processing pipeline.
 /// </summary>
 internal sealed class FarmerMover
 {
-    // setMoving() direction codes (Farmer.cs:7014)
-    private const byte MoveUp = 1;
-    private const byte MoveRight = 2;
-    private const byte MoveDown = 4;
-    private const byte MoveLeft = 8;
-    private const byte ReleaseUp = 33;
-    private const byte ReleaseRight = 34;
-    private const byte ReleaseDown = 36;
-    private const byte ReleaseLeft = 40;
-    private const byte StartRunning = 16;
-    private const byte HaltCode = 64;
-
     /// <summary>Max ticks without position change before declaring stuck.</summary>
     private const int StuckThresholdTicks = 120; // ~2 seconds at 60fps
 
-    private Queue<Point>? _waypoints;
     private Action<Character, GameLocation>? _onArrival;
     private Action? _onPathFailed;
-    private byte _lastDirection;
     private Point _lastPosition;
     private int _stuckTicks;
+    private bool _active;
 
     /// <summary>Whether the mover is currently guiding the farmer along a path.</summary>
-    public bool IsMoving => _waypoints is { Count: > 0 };
+    public bool IsMoving => _active;
 
-    /// <summary>Whether the arrival callback fired during the last <see cref="Update"/> call.</summary>
+    /// <summary>Whether the arrival callback fired during the current game tick.</summary>
     public bool ArrivedThisTick { get; private set; }
 
     /// <summary>
@@ -52,21 +42,23 @@ internal sealed class FarmerMover
         _stuckTicks = 0;
         ArrivedThisTick = false;
 
-        var start = Game1.player.TilePoint;
+        var farmer = Game1.player;
+        var start = farmer.TilePoint;
+
         if (start == target)
         {
-            _waypoints = null;
+            _active = false;
             Arrive();
             return;
         }
 
         var grid = new LiveTileGrid(location);
-        var path = Pathfinder.FindPath(start, target, grid);
+        var bfsPath = Pathfinder.FindPath(start, target, grid);
 
-        if (path == null)
+        if (bfsPath == null)
         {
             Logger.Warn($"FarmerMover: no path from ({start.X},{start.Y}) to ({target.X},{target.Y}).");
-            _waypoints = null;
+            _active = false;
             var failCallback = _onPathFailed;
             _onPathFailed = null;
             _onArrival = null;
@@ -74,26 +66,46 @@ internal sealed class FarmerMover
             return;
         }
 
-        _waypoints = path;
-        _lastDirection = 0;
-        _lastPosition = start;
+        // Convert Queue<Point> (BFS order) to Stack<Point> for PathFindController.
+        // PathFindController.Peek() reads from top, so first waypoint must be on top.
+        // new Stack(enumerable) pushes each element, so the last becomes the top.
+        // Reversing first ensures the first BFS waypoint ends up on top.
+        var stack = new Stack<Point>(bfsPath.Reverse());
 
-        Game1.player.setMoving(StartRunning);
+        _lastPosition = start;
+        _active = true;
+
+        farmer.controller = new PathFindController(
+            stack, location, farmer, target)
+        {
+            endBehaviorFunction = (c, loc) => Arrive()
+        };
     }
 
     /// <summary>
     /// Called each tick from the bot's UpdateTicked handler.
-    /// Checks farmer position against the next waypoint and issues movement commands.
+    /// Monitors for stuck conditions — actual movement is handled by PathFindController.
     /// </summary>
     public void Update()
     {
         ArrivedThisTick = false;
 
-        if (_waypoints == null || _waypoints.Count == 0)
+        if (!_active)
             return;
 
-        var farmer = Game1.player;
-        var current = farmer.TilePoint;
+        // If the controller was cleared externally (e.g. cutscene), treat as path failed
+        if (Game1.player.controller == null)
+        {
+            Logger.Warn("FarmerMover: controller cleared externally.");
+            var failCallback = _onPathFailed;
+            _active = false;
+            _onPathFailed = null;
+            _onArrival = null;
+            failCallback?.Invoke();
+            return;
+        }
+
+        var current = Game1.player.TilePoint;
 
         // Stuck detection: if position hasn't changed for too long, give up
         if (current == _lastPosition)
@@ -113,78 +125,34 @@ internal sealed class FarmerMover
             _stuckTicks = 0;
             _lastPosition = current;
         }
-
-        var target = _waypoints.Peek();
-
-        // If we've reached the current waypoint, advance
-        if (current == target)
-        {
-            _waypoints.Dequeue();
-
-            if (_waypoints.Count == 0)
-            {
-                farmer.Halt();
-                Arrive();
-                return;
-            }
-
-            target = _waypoints.Peek();
-        }
-
-        // Determine direction toward next waypoint
-        int dx = target.X - current.X;
-        int dy = target.Y - current.Y;
-
-        // Move one axis at a time (prefer the axis with greater distance)
-        byte direction;
-        if (Math.Abs(dy) >= Math.Abs(dx))
-            direction = dy > 0 ? MoveDown : MoveUp;
-        else
-            direction = dx > 0 ? MoveRight : MoveLeft;
-
-        // Only change direction if it differs from last frame
-        if (direction != _lastDirection)
-        {
-            if (_lastDirection != 0)
-                farmer.setMoving(GetReleaseCode(_lastDirection));
-
-            farmer.setMoving(direction);
-            _lastDirection = direction;
-        }
     }
 
-    /// <summary>Stop movement immediately and clear the path.</summary>
+    /// <summary>Stop movement immediately and clear the controller.</summary>
     public void Stop()
     {
-        _waypoints = null;
+        _active = false;
         _onArrival = null;
         _onPathFailed = null;
-        _lastDirection = 0;
         _stuckTicks = 0;
+        Game1.player.controller = null;
         Game1.player.Halt();
     }
 
     private void Arrive()
     {
         ArrivedThisTick = true;
+        _active = false;
         var callback = _onArrival;
         _onArrival = null;
         _onPathFailed = null;
-        _lastDirection = 0;
         _stuckTicks = 0;
 
+        // Controller is cleared by the game after update() returns true,
+        // but clear it here too in case Arrive was called from StartPath (same-tile).
+        Game1.player.controller = null;
         Game1.player.Halt();
         callback?.Invoke(Game1.player, Game1.currentLocation);
     }
-
-    private static byte GetReleaseCode(byte moveCode) => moveCode switch
-    {
-        MoveUp => ReleaseUp,
-        MoveRight => ReleaseRight,
-        MoveDown => ReleaseDown,
-        MoveLeft => ReleaseLeft,
-        _ => HaltCode
-    };
 
     /// <summary>
     /// Minimal ITileGrid adapter for live game queries during pathfinding.
@@ -200,7 +168,7 @@ internal sealed class FarmerMover
         };
 
         private readonly GameLocation _location;
-        private readonly Dictionary<Point, Models.TileInfo> _cache = new();
+        private readonly Dictionary<Point, TileInfo> _cache = new();
 
         public int Width { get; }
         public int Height { get; }
@@ -216,14 +184,12 @@ internal sealed class FarmerMover
         public bool IsInBounds(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;
 
         /// <inheritdoc/>
-        public Models.TileInfo? GetTile(Point p) => _cache.GetValueOrDefault(p);
+        public TileInfo? GetTile(Point p) => _cache.GetValueOrDefault(p);
 
         /// <summary>
         /// Query the game's collision API for tile passability and cache the result.
-        /// Only checks <see cref="GameLocation.isCollidingPosition"/> — does not check
-        /// water source or crop status since this grid is only used for pathfinding.
         /// </summary>
-        public Models.TileInfo GetOrQuery(int x, int y)
+        public TileInfo GetOrQuery(int x, int y)
         {
             var key = new Point(x, y);
             if (_cache.TryGetValue(key, out var cached))
@@ -233,13 +199,13 @@ internal sealed class FarmerMover
                 new Rectangle(x * 64 + 1, y * 64 + 1, 62, 62),
                 Game1.viewport, isFarmer: true, -1, glider: false, Game1.player);
 
-            var tile = new Models.TileInfo(x, y, blocked, isWaterSource: false, needsWatering: false);
+            var tile = new TileInfo(x, y, blocked, isWaterSource: false, needsWatering: false);
             _cache[key] = tile;
             return tile;
         }
 
         /// <inheritdoc/>
-        public IEnumerable<Models.TileInfo> GetOrthogonalNeighbors(Point p)
+        public IEnumerable<TileInfo> GetOrthogonalNeighbors(Point p)
         {
             foreach (var off in OrthOffsets)
             {
@@ -250,7 +216,7 @@ internal sealed class FarmerMover
         }
 
         /// <inheritdoc/>
-        public IEnumerable<Models.TileInfo> GetAllNeighbors(Point p)
+        public IEnumerable<TileInfo> GetAllNeighbors(Point p)
         {
             foreach (var off in AllOffs)
             {

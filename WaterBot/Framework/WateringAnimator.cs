@@ -34,6 +34,7 @@ internal static class WateringAnimator
         farmer.Halt();
         farmer.UsingTool = true;
         farmer.CanMove = false;
+        wateringCan.Update(farmer.FacingDirection, 0, farmer);
 
         // Redirect useTool callback to water the exact target tile.
         // The lambda clears itself after firing to avoid leaking into later tool uses.

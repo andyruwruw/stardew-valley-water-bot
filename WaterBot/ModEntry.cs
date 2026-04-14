@@ -1,3 +1,4 @@
+using HarmonyLib;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -14,6 +15,13 @@ public class ModEntry : Mod
     private ModConfig _config = null!;
     private WateringBot _bot = null!;
 
+    /// <summary>
+    /// Set to true while the bot is walking so the Harmony patch suppresses
+    /// <see cref="FarmerSprite.StopAnimation"/> calls that would reset the walk
+    /// animation every frame due to the game's input-release processing.
+    /// </summary>
+    internal static bool BotIsWalking;
+
     public override void Entry(IModHelper helper)
     {
         _config = helper.ReadConfig<ModConfig>();
@@ -21,8 +29,28 @@ public class ModEntry : Mod
 
         _bot = new WateringBot(helper, _config);
 
+        // Patch FarmerSprite.StopAnimation to prevent the game's input-release
+        // loop from resetting the walk animation every frame while the bot is active.
+        var harmony = new Harmony(this.ModManifest.UniqueID);
+        harmony.Patch(
+            original: AccessTools.Method(typeof(FarmerSprite), nameof(FarmerSprite.StopAnimation)),
+            prefix: new HarmonyMethod(typeof(ModEntry), nameof(StopAnimation_Prefix))
+        );
+
         helper.Events.Input.ButtonPressed += OnButtonPressed;
         helper.Events.GameLoop.GameLaunched += (_, _) => SetUpConfigMenu();
+    }
+
+    /// <summary>
+    /// Harmony prefix: skip <see cref="FarmerSprite.StopAnimation"/> while the bot
+    /// is walking. The game calls this via <c>Farmer.Halt()</c> every frame because
+    /// no physical keys are held, which resets <c>currentSingleAnimation</c> to -1
+    /// and <c>currentAnimationIndex</c> to 0, causing the walk animation to restart
+    /// from frame 0 every tick instead of progressing through all 4 frames.
+    /// </summary>
+    private static bool StopAnimation_Prefix()
+    {
+        return !BotIsWalking; // false = skip original method
     }
 
     private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)

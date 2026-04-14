@@ -127,6 +127,7 @@ internal sealed class WateringBot
     {
         if (!IsActive) return;
 
+        ModEntry.BotIsWalking = false;
         _state = BotState.Idle;
         _mover.Stop();
         WateringAnimator.ResetFarmerState(Game1.player);
@@ -204,6 +205,8 @@ internal sealed class WateringBot
     private void OnArrived(Character c, GameLocation location)
     {
         if (!IsActive) return;
+
+        ModEntry.BotIsWalking = false;
 
         if (_state == BotState.Refilling)
         {
@@ -331,10 +334,12 @@ internal sealed class WateringBot
         }
 
         _state = BotState.Refilling;
+        ModEntry.BotIsWalking = true;
         WateringAnimator.ResetFarmerState(Game1.player);
         _mover.StartPath(_refillAction.StandPosition, Game1.currentLocation, OnArrived,
             onPathFailed: () =>
             {
+                ModEntry.BotIsWalking = false;
                 _state = BotState.Idle;
                 _mover.Stop();
                 ShowMessage("process.waterless", HUDMessage.error_type);
@@ -395,6 +400,7 @@ internal sealed class WateringBot
             return;
         }
 
+        ModEntry.BotIsWalking = true;
         WateringAnimator.ResetFarmerState(Game1.player);
         var target = _currentActions[_currentActionIndex].StandPosition;
         _mover.StartPath(target, Game1.currentLocation, OnArrived, onPathFailed: OnPathFailed);
@@ -406,6 +412,7 @@ internal sealed class WateringBot
     /// </summary>
     private void OnPathFailed()
     {
+        ModEntry.BotIsWalking = false;
         Logger.Warn("WateringBot: path failed, skipping to next action.");
         _currentActionIndex++;
         if (_currentActionIndex < _currentActions.Count)
@@ -448,6 +455,7 @@ internal sealed class WateringBot
     /// <param name="logMessage">Optional warning message to log, or null for silent stop.</param>
     private void ForceStop(string? logMessage = null)
     {
+        ModEntry.BotIsWalking = false;
         _state = BotState.Idle;
         _mover.Stop();
         WateringAnimator.ResetFarmerState(Game1.player);

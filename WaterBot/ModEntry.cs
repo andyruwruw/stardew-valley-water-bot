@@ -1,4 +1,4 @@
-﻿using BotFramework;
+using HarmonyLib;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -7,158 +7,150 @@ using StardewValley.TerrainFeatures;
 using StardewValley.Tools;
 using WaterBot.Framework;
 
-namespace WaterBot
+namespace WaterBot;
+
+/// <summary>The mod entry point. Wires SMAPI events and config menu.</summary>
+public class ModEntry : Mod
 {
+    private ModConfig _config = null!;
+    private WateringBot _bot = null!;
+
     /// <summary>
-    /// The mod entry point.
+    /// Set to true while the bot is walking so the Harmony patch suppresses
+    /// <see cref="FarmerSprite.StopAnimation"/> calls that would reset the walk
+    /// animation every frame due to the game's input-release processing.
     /// </summary>
-    public class WaterBot : Mod
+    internal static bool BotIsWalking;
+
+    public override void Entry(IModHelper helper)
     {
-        internal static Config? config;
-        private WaterBotController? bot;
+        _config = helper.ReadConfig<ModConfig>();
+        Logger.SetLogAction((msg, level) => Monitor.Log(msg, (LogLevel)level));
 
-        /// <summary>
-        /// The mod entry point, called after the mod is first loaded.
-        /// </summary>
-        /// 
-        /// <param name="helper">Provides simplified APIs for writing mods.</param>
-        public override void Entry(IModHelper helper)
+        _bot = new WateringBot(helper, _config);
+
+        // Patch FarmerSprite.StopAnimation to prevent the game's input-release
+        // loop from resetting the walk animation every frame while the bot is active.
+        var harmony = new Harmony(this.ModManifest.UniqueID);
+        harmony.Patch(
+            original: AccessTools.Method(typeof(FarmerSprite), nameof(FarmerSprite.StopAnimation)),
+            prefix: new HarmonyMethod(typeof(ModEntry), nameof(StopAnimation_Prefix))
+        );
+
+        helper.Events.Input.ButtonPressed += OnButtonPressed;
+        helper.Events.GameLoop.GameLaunched += (_, _) => SetUpConfigMenu();
+    }
+
+    /// <summary>
+    /// Harmony prefix: skip <see cref="FarmerSprite.StopAnimation"/> while the bot
+    /// is walking. The game calls this via <c>Farmer.Halt()</c> every frame because
+    /// no physical keys are held, which resets <c>currentSingleAnimation</c> to -1
+    /// and <c>currentAnimationIndex</c> to 0, causing the walk animation to restart
+    /// from frame 0 every tick instead of progressing through all 4 frames.
+    /// </summary>
+    private static bool StopAnimation_Prefix()
+    {
+        return !BotIsWalking; // false = skip original method
+    }
+
+    private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
+    {
+        if (!Context.IsWorldReady)
+            return;
+
+        if (_bot.IsActive)
         {
-            config = helper.ReadConfig<Config>();
-            Logger.SetMonitor(Monitor);
-            this.bot = new WaterBotController(helper);
-            // Set static reference to monitor for logging.
-
-            helper.Events.Input.ButtonPressed += this.OnButtonPressed;
-            helper.Events.GameLoop.GameLaunched += (s, e) => SetUpConfigMenu();
-        }
-
-        /// <summary>
-        /// Raised after the player presses a button on the keyboard, controller, or mouse.
-        /// </summary>
-        /// 
-        /// <param name="sender">The event sender.</param>
-        /// <param name="e">The event data.</param>
-        private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
-        {
-            // ignore if player hasn't loaded a save yet
-            if (!Context.IsWorldReady)
+            Helper.Input.Suppress(e.Button);
+            if (_bot.InGracePeriod)
                 return;
-
-            if (this.bot?.active == true)
-            {
-                Logger.Log("Player provided interrupt signal. Process stopped.");
-                this.bot.stop();
-            }
-            else if (e.Button.IsActionButton()) // SButton.MouseRight 
-            {
-                if (this.isWateringHoedDirt())
-                {
-                    Logger.Log("Player provided trigger to begin bot.");
-                    this.bot?.start(this.console);
-                }
-            }
+            _bot.Stop();
+            return;
         }
 
-        /// <summary>
-        /// Determines if the event was watering a tile of hoed dirt
-        /// </summary>
-        private bool isWateringHoedDirt()
+        if (e.Button.IsActionButton() && IsPlayerWateringCrop())
         {
-            // Is the player using a Watering Can on their Farm?
-            if (Game1.player?.CurrentItem is WateringCan)
-            {
-                // Find action tiles
-                Vector2 mousePosition = Utility.PointToVector2(Game1.getMousePosition()) + new Vector2(Game1.viewport.X, Game1.viewport.Y);
-                Vector2 toolLocation = Game1.player.GetToolLocation(mousePosition);
-                Vector2 tile = Utility.clampToTile(toolLocation);
+            Helper.Input.Suppress(e.Button);
+            Logger.Debug("Trigger: player right-clicked crop with watering can.");
+            _bot.Start();
+        }
+    }
 
-                List<Vector2> tileLocations = this.Helper.Reflection
-                    .GetMethod(Game1.player.CurrentItem, "tilesAffected")
-                    .Invoke<List<Vector2>>(new Vector2(tile.X / 64, tile.Y / 64), 0, Game1.player);
-
-                foreach (Vector2 tileLocation in tileLocations)
-                {
-                    Vector2 rounded = new Vector2((float)Math.Round(tileLocation.X), (float)Math.Round(tileLocation.Y));
-
-                    // If they just watered Hoe Dirt, return true
-                    if (Game1.currentLocation?.terrainFeatures.ContainsKey(rounded) == true &&
-                        Game1.currentLocation.terrainFeatures[rounded] is HoeDirt dirt &&
-                        dirt.crop != null &&
-                        ((dirt.crop.fullyGrown.Value &&
-                        dirt.crop.dayOfCurrentPhase.Value > 0) || 
-                            (dirt.crop.currentPhase.Value < dirt.crop.phaseDays.Count - 1)))
-                    {
-                        return true;
-                    }
-                }
-            }
+    /// <summary>
+    /// Check whether the player is holding a watering can and the cursor is over
+    /// a tile with a living crop that needs watering. No reflection needed — just
+    /// check the tile under the tool location directly.
+    /// </summary>
+    private static bool IsPlayerWateringCrop()
+    {
+        var player = Game1.player;
+        if (player?.CurrentTool is not WateringCan)
             return false;
-        }
 
-        /// <summary>
-        /// Debug messages
-        /// </summary>
-        /// 
-        /// <param name="message">Message text.</param>
-        public void console(string message)
-        {
-            Logger.Log(message, LogLevel.Debug);
-        }
+        // Get the tile the player is targeting
+        var mousePos = Utility.PointToVector2(Game1.getMousePosition())
+            + new Vector2(Game1.viewport.X, Game1.viewport.Y);
+        var toolLocation = player.GetToolLocation(mousePos);
+        int tileX = (int)(toolLocation.X / 64);
+        int tileY = (int)(toolLocation.Y / 64);
 
-        public class Config
-        {
-            public bool UseSmallGrouping { get; set; } = false;
-            public bool RefillOnFinish { get; set; } = false;
-            public int RefillIfLower { get; set; } = 95;
-            public bool RedoPathOnRefill { get; set; } = false;
-        }
+        var tileVec = new Vector2(tileX, tileY);
 
-        private void SetUpConfigMenu()
-        {
-            // get Generic Mod Config Menu's API (if it's installed)
-            var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
-            if (configMenu is null)
-                return;
+        if (Game1.currentLocation?.terrainFeatures.TryGetValue(tileVec, out var feature) != true)
+            return false;
 
-            // register mod
-            configMenu.Register(
-                mod: this.ModManifest,
-                reset: () => config = new Config(),
-                save: () => this.Helper.WriteConfig<Config>(config)
-            );
+        if (feature is not HoeDirt { crop: Crop crop } || crop.dead.Value)
+            return false;
 
-            // add some config options
-            configMenu.AddBoolOption(
-                mod: ModManifest,
-                name: () => this.Helper.Translation.Get("config.use_small_grouping.name"),
-                tooltip: () => this.Helper.Translation.Get("config.use_small_grouping.desc"),
-                getValue: () => config.UseSmallGrouping,
-                setValue: (bool b) => config.UseSmallGrouping = b
-            );
-            configMenu.AddBoolOption(
-                mod: ModManifest,
-                name: () => this.Helper.Translation.Get("config.refill_on_finish.name"),
-                tooltip: () => this.Helper.Translation.Get("config.refill_on_finish.desc"),
-                getValue: () => config.RefillOnFinish,
-                setValue: (bool b) => config.RefillOnFinish = b
-            );
-            configMenu.AddNumberOption(
-                mod: ModManifest,
-                name: () => this.Helper.Translation.Get("config.refill_if_lower.name"),
-                tooltip: () => this.Helper.Translation.Get("config.refill_if_lower.desc"),
-                getValue: () => config.RefillIfLower,
-                setValue: (int b) => config.RefillIfLower = b,
-                min: 0,
-                max: 100
-            );
-            configMenu.AddBoolOption(
-                mod: ModManifest,
-                name: () => this.Helper.Translation.Get("config.redo_path_on_refill.name"),
-                tooltip: () => this.Helper.Translation.Get("config.redo_path_on_refill.desc"),
-                getValue: () => config.RedoPathOnRefill,
-                setValue: (bool b) => config.RedoPathOnRefill = b
-            );
-        }
+        // Needs watering: still growing, or fully grown with days remaining, or regrows
+        return (crop.fullyGrown.Value && crop.dayOfCurrentPhase.Value > 0)
+            || (crop.currentPhase.Value < crop.phaseDays.Count - 1)
+            || crop.RegrowsAfterHarvest();
+    }
+
+    private void SetUpConfigMenu()
+    {
+        var api = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+        if (api is null)
+            return;
+
+        api.Register(
+            mod: ModManifest,
+            reset: _config.ResetToDefaults,
+            save: () => Helper.WriteConfig(_config)
+        );
+
+        api.AddBoolOption(
+            mod: ModManifest,
+            name: () => Helper.Translation.Get("config.use_small_grouping.name"),
+            tooltip: () => Helper.Translation.Get("config.use_small_grouping.desc"),
+            getValue: () => _config.UseSmallGrouping,
+            setValue: value => _config.UseSmallGrouping = value
+        );
+
+        api.AddBoolOption(
+            mod: ModManifest,
+            name: () => Helper.Translation.Get("config.refill_on_finish.name"),
+            tooltip: () => Helper.Translation.Get("config.refill_on_finish.desc"),
+            getValue: () => _config.RefillOnFinish,
+            setValue: value => _config.RefillOnFinish = value
+        );
+
+        api.AddNumberOption(
+            mod: ModManifest,
+            name: () => Helper.Translation.Get("config.refill_if_lower.name"),
+            tooltip: () => Helper.Translation.Get("config.refill_if_lower.desc"),
+            getValue: () => _config.RefillIfLower,
+            setValue: value => _config.RefillIfLower = value,
+            min: 0,
+            max: 100
+        );
+
+        api.AddBoolOption(
+            mod: ModManifest,
+            name: () => Helper.Translation.Get("config.redo_path_on_refill.name"),
+            tooltip: () => Helper.Translation.Get("config.redo_path_on_refill.desc"),
+            getValue: () => _config.RedoPathOnRefill,
+            setValue: value => _config.RedoPathOnRefill = value
+        );
     }
 }

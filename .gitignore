@@ -371,3 +371,6 @@ Temporary Items
 ### macOS Patch ###
 # iCloud generated files
 *.icloud
+
+# Agent handoff docs (session-specific, not for version control)
+HANDOFF.md
